@@ -1,0 +1,34 @@
+[project]
+name = "retinal-dr-classification"
+version = "0.1.0"
+description = "Retinal disease classification from fundus images using deep learning"
+authors = [
+    { name = "Tejashree Khot" }
+]
+readme = "README.md"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["src/tests"]
+
+[tool.ruff]
+line-length = 100
+src = ["src"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.pylint]
+max-args = 7
+
+[tool.ruff.lint.isort]
+split-on-trailing-comma = false
+
+[tool.ruff.format]
+quote-style = "double"
+skip-magic-trailing-comma = true
+indent-style = "space"
+
+[[tool.mypy.overrides]]
+ignore_missing_imports = true

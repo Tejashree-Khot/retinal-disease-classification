@@ -1,0 +1,19 @@
+pandas==1.5.3	
+termcolor
+torch
+torchvision
+torchaudio
+torchviz
+tqdm
+scikit-learn>=1.7.0
+matplotlib>=3.10.3
+seaborn>=0.13.2
+pillow>=11.2.1
+
+# ci
+pytest>=8.3.2
+pytest-cov>=4.1.0
+coverage==7.8.0
+mypy==1.15.0
+pandas-stubs==2.2.2.240514
+ruff==0.11.4
