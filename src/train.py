@@ -22,18 +22,22 @@ def train_model(data_dir: Path, epochs: int = 5, batch_size: int = 16, lr: float
         batch_size (int): Batch size for training.
         lr (float): Learning rate for the optimizer.
     """
+    # Load the training data
     transform = get_transforms()
     print("Loading training data...")
     train_data = datasets.ImageFolder(str(data_dir), transform=transform)
     train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
     print("Training data loaded successfully.")
 
+    # Initialize the model
     print("Initializing model...")
     model = SimpleCNN().to(DEVICE)
     print(f"Using device: {DEVICE}")
     print(f"Number of training samples: {len(train_data)}")
     print(f"Batch size: {batch_size}, Learning rate: {lr}, Epochs: {epochs}")
     print("Model loaded and ready for training.")
+
+    # define loss function and optimizer
     criterion = nn.CrossEntropyLoss()  # Changed for multi-class classification
     optimizer = optim.Adam(model.parameters(), lr=lr)
 
@@ -48,16 +52,34 @@ def train_model(data_dir: Path, epochs: int = 5, batch_size: int = 16, lr: float
             if iteration == 0:
                 print(f"{out, labels}, Output shape: {out.shape}, Labels shape: {labels.shape}")
             loss = criterion(out, labels)
+            # update model parameters for the current batch
             loss.backward()
             optimizer.step()
             print(
                 f"Epoch {epoch + 1}, Iteration {iteration + 1}/{len(train_loader)}, "
                 f"Loss: {loss.item():.4f}"
             )
-            if iteration >= 40:
-                break
+            # if iteration >= 40:
+            #     break
+
+        # Evaluate the model afer each epoch
+        print("Evaluating model...")
+        model.eval()
+        total_loss = 0.0
+        with torch.no_grad():
+            for imgs, labels in train_loader:
+                imgs, labels = imgs.to(DEVICE), labels.to(DEVICE)
+                out = model(imgs)
+                loss = criterion(out, labels)
+                total_loss += loss.item()
+
+        avg_loss = total_loss / len(train_loader)
+        print(f"Epoch {epoch + 1}/{epochs}, Average Loss: {avg_loss:.4f}")
 
         print(f"Epoch {epoch + 1}/{epochs} completed.")
+    print("Training completed.")
+
+    # Save the trained model
     torch.save(model.state_dict(), "../checkpoints/model.pth")
     print("Training done. Model saved as model.pth")
 
