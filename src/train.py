@@ -5,20 +5,20 @@ from pathlib import Path
 import torch
 import wandb
 from torch import nn, optim
-from torch.utils.data import DataLoader
 from torchvision import datasets
 
+from dataloader.data_loader import get_data_loader
 from models.simple_model import SimpleCNN
 from utils.data_preprocessing import get_transforms
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+DEVICE = "cpu"  # Force CPU for compatibility with Kaggle Hub
 
 
 def init_wandb():
     """Initialize Weights & Biases for experiment tracking."""
     wandb.init(
-        project="retinal-disease-classification",
-        entity="tejashree",
+        project="retinal-desease-classification",
         name="retinal_cnn_training",
         config={"epochs": 10, "batch_size": 16, "learning_rate": 0.001, "model": "SimpleCNN"},
     )
@@ -38,8 +38,11 @@ def train_model(data_dir: Path, epochs: int = 5, batch_size: int = 16, lr: float
     transform = get_transforms()
     print("Loading training data...")
     train_data = datasets.ImageFolder(str(data_dir), transform=transform)
-    train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
+    train_loader = get_data_loader(data_dir, size=(224, 224), batch_size=batch_size, augment=True)
     print("Training data loaded successfully.")
+
+    val_dir = data_dir.parent / "test"
+    val_loader = get_data_loader(val_dir, size=(224, 224), batch_size=batch_size, augment=False)
 
     # Initialize the model
     print("Initializing model...")
@@ -65,8 +68,8 @@ def train_model(data_dir: Path, epochs: int = 5, batch_size: int = 16, lr: float
             # labels should be LongTensor with class indices for CrossEntropyLoss
             optimizer.zero_grad()
             out = model(imgs)
-            if iteration == 0:
-                print(f"{out, labels}, Output shape: {out.shape}, Labels shape: {labels.shape}")
+            if epoch == 0 and iteration == 0:
+                print(f"Output shape: {out.shape}, Labels shape: {labels.shape}")
             loss = criterion(out, labels)
             # update model parameters for the current batch
             loss.backward()
@@ -85,7 +88,7 @@ def train_model(data_dir: Path, epochs: int = 5, batch_size: int = 16, lr: float
         model.eval()
         val_loss = 0.0
         with torch.no_grad():
-            for imgs, labels in train_loader:
+            for imgs, labels in val_loader:
                 imgs, labels = imgs.to(DEVICE), labels.to(DEVICE)
                 out = model(imgs)
                 loss = criterion(out, labels)
@@ -101,9 +104,9 @@ def train_model(data_dir: Path, epochs: int = 5, batch_size: int = 16, lr: float
     wandb.finish()
 
     # Save the trained model
-    torch.save(model.state_dict(), "../../checkpoints/model.pth")
+    torch.save(model.state_dict(), "../checkpoints/model.pth")
     print("Training done. Model saved as model.pth")
 
 
 if __name__ == "__main__":
-    train_model(data_dir=Path("../../data/train"), epochs=10, batch_size=16, lr=0.001)
+    train_model(data_dir=Path("/workspace/data/IDRiD/train"), epochs=10, batch_size=16, lr=0.001)

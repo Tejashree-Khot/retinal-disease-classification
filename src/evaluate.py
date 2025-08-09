@@ -5,14 +5,13 @@ from pathlib import Path
 import torch
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 from termcolor import colored
-from torch.utils.data import DataLoader
-from torchvision import datasets
 from tqdm import tqdm
 
-from utils.data_preprocessing import get_transforms
+from dataloader.data_loader import get_data_loader
 from utils.model_utils import load_model
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+DEVICE = "cpu"  # Force CPU for compatibility with Kaggle Hub
 
 
 def calculate_accuarcy_metrics(preds: list[int], labels: list[int]) -> None:
@@ -47,11 +46,9 @@ def evaluate_model(model_path: Path, data_dir: Path, batch_size: int = 16) -> No
     if model is None:
         print(colored("Failed to load the model.", "red"))
         return
-
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    transform = get_transforms()
-    test_data = datasets.ImageFolder(str(data_dir), transform=transform)
-    test_loader = DataLoader(test_data, batch_size=batch_size)
+    # Load the training data
+    print("Loading training data...")
+    test_loader = get_data_loader(data_dir, size=(224, 224), batch_size=batch_size, augment=False)
 
     predictions = []
     gt_labels = []
@@ -59,7 +56,7 @@ def evaluate_model(model_path: Path, data_dir: Path, batch_size: int = 16) -> No
     with torch.no_grad():
         for batch in tqdm(test_loader, desc="Evaluating", unit="batch"):
             imgs, labels = batch
-            imgs, labels = imgs.to(device), labels.to(device)
+            imgs, labels = imgs.to(DEVICE), labels.to(DEVICE)
             outputs = model(imgs)
 
             probabilities = torch.softmax(outputs, dim=1).cpu().numpy()[0]
@@ -74,4 +71,6 @@ def evaluate_model(model_path: Path, data_dir: Path, batch_size: int = 16) -> No
 
 
 if __name__ == "__main__":
-    evaluate_model(model_path=Path("../checkpoints/model.pth"), data_dir=Path("../data/test"))
+    evaluate_model(
+        model_path=Path("../checkpoints/model.pth"), data_dir=Path("/workspace/data/IDRiD/train")
+    )
