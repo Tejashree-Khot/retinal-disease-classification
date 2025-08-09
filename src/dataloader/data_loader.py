@@ -47,6 +47,7 @@ class CustomDataset(Dataset):
 def image_transform(
     size: tuple | list, augment: bool, arch: str = "efficientnet-b0"
 ) -> transforms.Compose:
+    """Image transformation for training and validation."""
     if arch == "efficientnet-b0":
         mean = [0.485, 0.456, 0.406]
         std = [0.229, 0.224, 0.225]
@@ -64,6 +65,7 @@ def image_transform(
 
 
 def load_images(dataset_path: Path) -> tuple[list, list]:
+    """Load images and labels from the dataset."""
     images = []
     labels = []
     image_paths = []
@@ -88,6 +90,7 @@ def load_images(dataset_path: Path) -> tuple[list, list]:
 def get_data_loader(
     dataset_path: Path, size: tuple | list, batch_size: int, augment: bool
 ) -> DataLoader:
+    """Get data loader for the dataset."""
     # for faster training, we load data images first
     images, labels = load_images(dataset_path)
 
