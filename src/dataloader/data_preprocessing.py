@@ -1,8 +1,36 @@
 from pathlib import Path
+from typing import Callable
 
 import torch
 from PIL import Image
 from torchvision import transforms
+
+
+def get_efficient_net_data_transforms(img_size: int = 224) -> dict[str, Callable]:
+    """Return data augmentation and normalization transforms."""
+    mean = [0.485, 0.456, 0.406]
+    std = [0.229, 0.224, 0.225]
+    return {
+        "train": transforms.Compose(
+            [
+                transforms.RandomResizedCrop(img_size, scale=(0.7, 1.0)),
+                transforms.RandomHorizontalFlip(),
+                transforms.RandomVerticalFlip(),
+                transforms.RandomRotation(20),
+                transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3, hue=0.1),
+                transforms.RandomAffine(degrees=0, translate=(0.1, 0.1), shear=10),
+                transforms.ToTensor(),
+                transforms.Normalize(mean, std),
+            ]
+        ),
+        "val": transforms.Compose(
+            [
+                transforms.Resize((img_size, img_size)),
+                transforms.ToTensor(),
+                transforms.Normalize(mean, std),
+            ]
+        ),
+    }
 
 
 def get_transforms(image_size: int = 224) -> transforms.Compose:
