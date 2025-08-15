@@ -9,7 +9,7 @@ from termcolor import colored
 from models.simple_model import SimpleCNN
 
 
-def load_model(model_path: Path, device: torch.device) -> SimpleCNN | None:
+def load_model(model_path: Path, device: torch.device | str) -> SimpleCNN | None:
     """Load the trained SimpleCNN model from the specified path.
 
     Args:
