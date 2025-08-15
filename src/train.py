@@ -10,8 +10,8 @@ from torch.utils.data import DataLoader
 from torchvision import datasets
 
 from dataloader.data_loader import get_data_loader
+from dataloader.data_preprocessing import get_transforms, load_image
 from models.simple_model import SimpleCNN
-from utils.data_preprocessing import get_transforms, load_image
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
