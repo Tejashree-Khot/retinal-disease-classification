@@ -8,18 +8,17 @@ from termcolor import colored
 from tqdm import tqdm
 
 from dataloader.data_loader import get_data_loader
-from utils.model_utils import load_model
+from src.models.model_utils import load_model
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-DEVICE = "cpu"  # Force CPU for compatibility with Kaggle Hub
 
 
 def calculate_accuarcy_metrics(preds: list[int], labels: list[int]) -> None:
     """Calculate and print accuracy."""
     accuracy = accuracy_score(labels, preds)
-    precision = precision_score(labels, preds, average="weighted")
-    recall = recall_score(labels, preds, average="weighted")
-    f1 = f1_score(labels, preds, average="weighted")
+    precision = precision_score(labels, preds, average="weighted", zero_division=0)
+    recall = recall_score(labels, preds, average="weighted", zero_division=0)
+    f1 = f1_score(labels, preds, average="weighted", zero_division=0)
     print(
         f"Accuracy: {accuracy:.4f}, Precision: {precision:.4f}, "
         f"Recall: {recall:.4f}, F1 Score: {f1:.4f}"

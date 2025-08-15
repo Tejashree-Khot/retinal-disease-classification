@@ -1,12 +1,13 @@
 # Minimalistic inference script for cancer detection
+import argparse
 import sys
 from pathlib import Path
 
 import torch
 from termcolor import colored
 
-from utils.data_preprocessing import load_image
-from utils.model_utils import load_model
+from dataloader.data_preprocessing import load_image
+from src.models.model_utils import load_model
 
 CLASSES = ["adenocarcinoma", "large.cell.carcinoma", "normal", "squamous.cell.carcinoma"]
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -42,10 +43,8 @@ def predict(image_path: Path, model_path: Path) -> None:
 
 def make_parser():
     """Create an argument parser for command line arguments."""
-    import argparse
-
     parser = argparse.ArgumentParser(description="Cancer Detection Inference Script")
-    parser.add_argument("image_path", type=Path, help="Path to the image file to be predicted")
+    parser.add_argument("--image_path", type=Path, help="Path to the image file to be predicted")
     parser.add_argument(
         "--model_path",
         type=Path,
