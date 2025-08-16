@@ -15,7 +15,7 @@ class SimpleCNN(nn.Module):
             nn.MaxPool2d(2),
         )
         self.fc = nn.Sequential(
-            nn.Flatten(), nn.Linear(32 * 54 * 54, 64), nn.ReLU(), nn.Linear(64, 4)
+            nn.Flatten(), nn.Linear(32 * 54 * 54, 64), nn.ReLU(), nn.Linear(64, 5)
         )
 
     def forward(self, x):

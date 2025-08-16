@@ -61,8 +61,11 @@ def load_image(image_path: Path, image_size: int = 224) -> torch.Tensor:
     Returns:
         torch.Tensor: Preprocessed image tensor.
     """
-    image = Image.open(image_path).convert("RGB")
+    pil_image = Image.open(image_path).convert("RGB")
     transform = get_transforms(image_size)
-    image = transform(image)
-    image = image.unsqueeze(0)  # Add batch dimension
-    return image
+    tensor_image = transform(pil_image)
+    # Ensure the transformed result is a Tensor (some static analyzers may think it's a PIL Image)
+    if isinstance(tensor_image, Image.Image):
+        tensor_image = transforms.ToTensor()(tensor_image)
+    tensor_image = tensor_image.unsqueeze(0)
+    return tensor_image

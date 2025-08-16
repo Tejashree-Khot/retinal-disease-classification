@@ -1,6 +1,7 @@
 """PyTorch custom data loader."""
 
 from pathlib import Path
+from typing import cast
 
 import numpy as np
 import pandas as pd
@@ -37,7 +38,10 @@ class CustomDataset(Dataset):
         # Convert numpy array to PIL Image for transforms
         img_array = self.images[index]
         img_pil = Image.fromarray(img_array)
-        img_tensor = self.image_transform(img_pil)
+        transformed = self.image_transform(img_pil)
+        if isinstance(transformed, Image.Image):
+            transformed = transforms.ToTensor()(transformed)
+        img_tensor = cast(Tensor, transformed)
 
         label = torch.tensor(label, dtype=torch.long)
 
@@ -115,7 +119,7 @@ def prepare_data_loaders(
 
 if __name__ == "__main__":
     # Example usage
-    dataset_path = "/workspace/data/IDRiD/train"
+    dataset_path = "../../../data/IDRiD/train"
     size = (224, 224)
     batch_size = 8
     augment = True

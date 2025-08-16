@@ -12,8 +12,10 @@ def get_efficientnet_model(
 ) -> nn.Module:
     """Return EfficientNet-B0 with final layer adjusted for num_classes."""
     model = models.efficientnet_b0(weights=EfficientNet_B0_Weights.DEFAULT if pretrained else None)
-    in_features = model.classifier[1].in_features
-    model.classifier[1] = nn.Linear(in_features, num_classes)
+    # EfficientNet-B0's classifier is Sequential, last layer is Linear
+    in_features = model.classifier[-1].in_features
+    model.classifier[-1] = nn.Linear(in_features, num_classes)  # type: ignore
+
     for param in model.parameters():
         param.requires_grad = fine_tune_all
     for param in model.classifier.parameters():
@@ -34,6 +36,6 @@ def visualize_model_architecture(
 
 if __name__ == "__main__":
     # Example usage
-    model = get_efficientnet_model(num_classes=10, pretrained=True, fine_tune_all=True)
+    model = get_efficientnet_model(num_classes=5, pretrained=True, fine_tune_all=True)
     visualize_model_architecture(model, "efficientnet_model.png")
     print("EfficientNet model and visualization ready.")
