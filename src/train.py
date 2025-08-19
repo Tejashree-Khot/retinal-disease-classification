@@ -1,5 +1,6 @@
 """Train a SimpleCNN model on a dataset of retinal images."""
 
+from datetime import datetime
 from pathlib import Path
 from typing import Callable
 
@@ -11,7 +12,7 @@ from torchvision import datasets
 
 from dataloader.data_loader import get_data_loader
 from dataloader.data_preprocessing import get_transforms, load_image
-from models.simple_model import SimpleCNN
+from models.efficient_net import get_efficientnet_model
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -32,11 +33,12 @@ def get_scheduler(
 
 def init_wandb():
     """Initialize Weights & Biases for experiment tracking."""
+    name_ith_timestamp = f"EfficientNet_B0_finetune_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
     wandb.init(
         project="retinal-desease-classification",
-        name="retinal_cnn_training",
-        config={"epochs": 10, "batch_size": 16, "learning_rate": 0.001, "model": "SimpleCNN"},
-        notes="Training a SimpleCNN model on retinal images",
+        name=name_ith_timestamp,
+        config={"epochs": 10, "batch_size": 16, "learning_rate": 0.001, "model": "EfficientNet-B0"},
+        notes="Training a EfficientNet model on retinal images",
     )
     print("Weights & Biases initialized.")
 
@@ -98,7 +100,7 @@ def inference(
     return predictions
 
 
-def train_model(data_dir: Path, epochs: int = 5, batch_size: int = 16, lr: float = 0.001):
+def train_model(data_dir: Path, epochs: int = 10, batch_size: int = 32, lr: float = 0.001):
     """Train a SimpleCNN model on the specified dataset.
 
     Args:
@@ -107,19 +109,22 @@ def train_model(data_dir: Path, epochs: int = 5, batch_size: int = 16, lr: float
         batch_size (int): Batch size for training.
         lr (float): Learning rate for the optimizer.
     """
+    image_size = (448, 448)  # Resize images to this size
     # Load the training data
     transform = get_transforms()
     print("Loading training data...")
     train_data = datasets.ImageFolder(str(data_dir), transform=transform)
-    train_loader = get_data_loader(data_dir, size=(224, 224), batch_size=batch_size, augment=True)
+    train_loader = get_data_loader(data_dir, size=image_size, batch_size=batch_size, augment=True)
     print("Training data loaded successfully.")
 
     val_dir = data_dir.parent / "test"
-    val_loader = get_data_loader(val_dir, size=(224, 224), batch_size=batch_size, augment=False)
+    val_loader = get_data_loader(val_dir, size=image_size, batch_size=batch_size, augment=False)
 
     # Initialize the model
     print("Initializing model...")
-    model = SimpleCNN().to(DEVICE)
+    model = get_efficientnet_model(num_classes=5, pretrained=True, fine_tune_all=False)
+    model.to(DEVICE)
+    # model = SimpleCNN().to(DEVICE)
     print(f"Using device: {DEVICE}")
     print(f"Number of training samples: {len(train_data)}")
     print(f"Batch size: {batch_size}, Learning rate: {lr}, Epochs: {epochs}")
@@ -171,4 +176,4 @@ def train_model(data_dir: Path, epochs: int = 5, batch_size: int = 16, lr: float
 
 
 if __name__ == "__main__":
-    train_model(data_dir=Path("/workspace/data/IDRiD/train"), epochs=10, batch_size=16, lr=0.001)
+    train_model(data_dir=Path("/data/IDRiD/train"), epochs=100, batch_size=32, lr=0.001)

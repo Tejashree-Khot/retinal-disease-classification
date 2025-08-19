@@ -74,7 +74,7 @@ def load_images(dataset_path: Path) -> tuple[list, list]:
     labels = []
     image_paths = []
 
-    data = pd.read_csv(dataset_path / "annotations.csv")[:30]
+    data = pd.read_csv(dataset_path / "annotations.csv")[:1000]  # Limit to 300 samples for testing
 
     dataset_path = Path(dataset_path)
     for row in tqdm(data.iterrows()):
@@ -120,16 +120,12 @@ def prepare_data_loaders(
 if __name__ == "__main__":
     # Example usage
     dataset_path = "../../../data/IDRiD/train"
-    size = (224, 224)
-    batch_size = 8
+    size = (448, 448)
+    batch_size = 32
     augment = True
 
     data_loader = get_data_loader(Path(dataset_path), size, batch_size, augment)
 
-    for images, labels in data_loader:
-        print(images.shape, labels)
-        break  # Just to show the first batch
-    print("Data loader is ready.")
     for images, labels in data_loader:
         print(images.shape, labels)
         break  # Just to show the first batch
