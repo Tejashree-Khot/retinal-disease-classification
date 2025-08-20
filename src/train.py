@@ -192,4 +192,6 @@ def make_parser():
 if __name__ == "__main__":
     parser = make_parser()
     args = parser.parse_args()
-    train_model(data_dir=Path(args.data_dir), epochs=args.epoch, batch_size=32, lr=0.001)
+    train_model(
+        data_dir=Path(args.data_dir), epochs=args.epochs, batch_size=args.batch_size, lr=args.lr
+    )
