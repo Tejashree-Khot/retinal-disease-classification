@@ -114,11 +114,11 @@ def train_model(data_dir: Path, epochs: int = 10, batch_size: int = 32, lr: floa
     image_size = (448, 448)  # Resize images to this size
     # Load the training data
     print("Loading training data...")
-    train_dir = data_dir.parent / "Train"
+    train_dir = data_dir / "Train"
     train_loader = get_data_loader(train_dir, size=image_size, batch_size=batch_size, augment=True)
     print("Training data loaded successfully.")
 
-    test_dir = data_dir.parent / "Test"
+    test_dir = data_dir / "Test"
     test_loader = get_data_loader(test_dir, size=image_size, batch_size=batch_size, augment=False)
 
     # Initialize the model
