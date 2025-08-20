@@ -1,7 +1,7 @@
 """Train a SimpleCNN model on a dataset of retinal images."""
 
-import os
 import argparse
+import os
 from datetime import datetime
 from pathlib import Path
 from typing import Callable
@@ -10,11 +10,10 @@ import torch
 import wandb
 from torch import nn, optim
 from torch.utils.data import DataLoader
-from torchvision import datasets
 from tqdm import tqdm
 
 from dataloader.data_loader import get_data_loader
-from dataloader.data_preprocessing import get_transforms, load_image
+from dataloader.data_preprocessing import load_image
 from models.efficient_net import get_efficientnet_model
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")

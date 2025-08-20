@@ -27,7 +27,6 @@ class CustomDataset(Dataset):
     def __getitem__(self, index: int) -> tuple[Tensor, Tensor]:
         label = self.labels[index]
         image_path = self.image_paths[index]
-
         image = self.image_transform(Image.open(image_path).convert("RGB"))
         img_tensor = cast(Tensor, image)
         label_tensor = torch.tensor(label, dtype=torch.long)
@@ -59,7 +58,7 @@ def load_images(dataset_path: Path) -> tuple[list[Path], list[int]]:
     image_paths = []
     labels = []
 
-    data = pd.read_csv(dataset_path / "annotations.csv")[:30]  # Limit to 300 samples for testing
+    data = pd.read_csv(dataset_path / "annotations.csv")
     print(f"Loading {len(data)} image_paths from {dataset_path}...")
 
     for row in tqdm(data.iterrows()):
