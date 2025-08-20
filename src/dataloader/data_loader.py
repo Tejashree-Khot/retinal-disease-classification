@@ -3,49 +3,35 @@
 from pathlib import Path
 from typing import cast
 
-import numpy as np
 import pandas as pd
 import torch
+from data_utils import CLASSES_DICT
 from PIL import Image
 from torch import Tensor
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
 from tqdm import tqdm
 
-from dataloader.data_utils import CLASSES_DICT
-
 
 class CustomDataset(Dataset):
     """Pytorch custom dataloader."""
 
-    def __init__(
-        self,
-        images: list | np.ndarray,
-        labels: list | np.ndarray,
-        image_transform: transforms.Compose,
-    ):
-        self.images = images  # Keep as list to handle different image sizes
-        self.labels = np.array(labels)
+    def __init__(self, dataset_path: Path, image_transform: transforms.Compose):
+        self.image_paths, self.labels = load_images(dataset_path)
         self.image_transform = image_transform
 
     def __len__(self) -> int:
-        size = len(self.images)
+        size = len(self.image_paths)
         return size
 
     def __getitem__(self, index: int) -> tuple[Tensor, Tensor]:
         label = self.labels[index]
+        image_path = self.image_paths[index]
 
-        # Convert numpy array to PIL Image for transforms
-        img_array = self.images[index]
-        img_pil = Image.fromarray(img_array)
-        transformed = self.image_transform(img_pil)
-        if isinstance(transformed, Image.Image):
-            transformed = transforms.ToTensor()(transformed)
-        img_tensor = cast(Tensor, transformed)
-
-        label = torch.tensor(label, dtype=torch.long)
-
-        return img_tensor, label
+        image = self.image_transform(Image.open(image_path).convert("RGB"))
+        img_tensor = cast(Tensor, image)
+        label_tensor = torch.tensor(label, dtype=torch.long)
+        return img_tensor, label_tensor
 
 
 def image_transform(
@@ -68,42 +54,38 @@ def image_transform(
     return data_transform
 
 
-def load_images(dataset_path: Path) -> tuple[list, list]:
-    """Load images and labels from the dataset."""
-    images = []
-    labels = []
+def load_images(dataset_path: Path) -> tuple[list[Path], list[int]]:
+    """Read image images and labels from the dataset."""
     image_paths = []
+    labels = []
 
-    data = pd.read_csv(dataset_path / "annotations.csv")[:3000]  # Limit to 300 samples for testing
-    print(f"Loading {len(data)} images from {dataset_path}...")
+    data = pd.read_csv(dataset_path / "annotations.csv")[:30]  # Limit to 300 samples for testing
+    print(f"Loading {len(data)} image_paths from {dataset_path}...")
 
-    dataset_path = Path(dataset_path)
     for row in tqdm(data.iterrows()):
         label = row[1]["class"]
         image_path = dataset_path / "images" / f"{row[1]['Image name']}"
         if image_path.exists():
             image_paths.append(image_path)
-            image = Image.open(image_path).convert("RGB")
-            image_array = np.array(image)
-            images.append(image_array)
-            labels.append(CLASSES_DICT[label])
+            labels.append(int(CLASSES_DICT[label]))
         else:
             print(f"Image {image_path} does not exist, skipping.")
 
-    print(f"Loaded {len(images)} images from {dataset_path}.")
-    return images, labels
+    print(f"Loaded {len(image_paths)} image_paths from {dataset_path}.")
+    return image_paths, labels
 
 
 def get_data_loader(
     dataset_path: Path, size: tuple | list, batch_size: int, augment: bool
 ) -> DataLoader:
     """Get data loader for the dataset."""
-    # for faster training, we load data images first
-    images, labels = load_images(dataset_path)
+    # for faster training, we load data images first,
+    # if memory is not an issue, you can uncomment the next line
+    # images, labels = load_images(dataset_path)
 
     data_transform = image_transform(size, augment)
 
-    data = CustomDataset(images, labels, data_transform)
+    data = CustomDataset(dataset_path, data_transform)
 
     data_loader = DataLoader(data, batch_size=batch_size, shuffle=True, num_workers=5)
     return data_loader
@@ -111,7 +93,7 @@ def get_data_loader(
 
 if __name__ == "__main__":
     # Example usage
-    dataset_path = "../../../data/IDRiD/train"
+    dataset_path = "/Users/somesh/workspace/data/IDRiD/Train"
     size = (448, 448)
     batch_size = 32
     augment = True
