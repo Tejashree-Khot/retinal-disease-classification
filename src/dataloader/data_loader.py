@@ -79,17 +79,16 @@ def load_images(dataset_path: Path) -> tuple[list, list]:
 
     dataset_path = Path(dataset_path)
     for row in tqdm(data.iterrows()):
-        try:
-            label = row[1]["class"]
-            image_path = dataset_path / "images" / f"{row[1]['Image name']}.jpg"
-            if image_path.exists():
-                image_paths.append(image_path)
-                image = Image.open(image_path).convert("RGB")
-                image_array = np.array(image)
-                images.append(image_array)
-                labels.append(CLASSES_DICT[label])
-        except Exception as e:
-            print(f"Error loading image {row[1]['Image name']}: {e}")
+        label = row[1]["class"]
+        image_path = dataset_path / "images" / f"{row[1]['Image name']}"
+        if image_path.exists():
+            image_paths.append(image_path)
+            image = Image.open(image_path).convert("RGB")
+            image_array = np.array(image)
+            images.append(image_array)
+            labels.append(CLASSES_DICT[label])
+        else:
+            print(f"Image {image_path} does not exist, skipping.")
 
     print(f"Loaded {len(images)} images from {dataset_path}.")
     return images, labels
