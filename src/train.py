@@ -113,14 +113,13 @@ def train_model(data_dir: Path, epochs: int = 10, batch_size: int = 32, lr: floa
     """
     image_size = (448, 448)  # Resize images to this size
     # Load the training data
-    transform = get_transforms()
     print("Loading training data...")
-    train_data = datasets.ImageFolder(str(data_dir), transform=transform)
-    train_loader = get_data_loader(data_dir, size=image_size, batch_size=batch_size, augment=True)
+    train_dir = data_dir.parent / "Train"
+    train_loader = get_data_loader(train_dir, size=image_size, batch_size=batch_size, augment=True)
     print("Training data loaded successfully.")
 
-    val_dir = data_dir.parent / "test"
-    val_loader = get_data_loader(val_dir, size=image_size, batch_size=batch_size, augment=False)
+    test_dir = data_dir.parent / "Test"
+    test_loader = get_data_loader(test_dir, size=image_size, batch_size=batch_size, augment=False)
 
     # Initialize the model
     print("Initializing model...")
@@ -128,7 +127,6 @@ def train_model(data_dir: Path, epochs: int = 10, batch_size: int = 32, lr: floa
     model.to(DEVICE)
     # model = SimpleCNN().to(DEVICE)
     print(f"Using device: {DEVICE}")
-    print(f"Number of training samples: {len(train_data)}")
     print(f"Batch size: {batch_size}, Learning rate: {lr}, Epochs: {epochs}")
     print("Model loaded and ready for training.")
 
@@ -146,7 +144,7 @@ def train_model(data_dir: Path, epochs: int = 10, batch_size: int = 32, lr: floa
     for epoch in tqdm(range(epochs)):
         model.train()
         train_loss, train_acc = train_one_epoch(model, train_loader, criterion, optimizer, DEVICE)
-        val_loss, val_acc = evaluate(model, val_loader, criterion, DEVICE)
+        val_loss, val_acc = evaluate(model, test_loader, criterion, DEVICE)
         scheduler.step()
 
         # save best weights

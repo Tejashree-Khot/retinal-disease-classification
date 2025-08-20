@@ -109,17 +109,6 @@ def get_data_loader(
     return data_loader
 
 
-def prepare_data_loaders(
-    data_dir: Path, size: tuple | list, batch_size: int, augment: bool = True
-) -> tuple[DataLoader, DataLoader]:
-    """Prepare data loaders for training and validation."""
-    train_dataset_path = data_dir / "train"
-    val_dataset_path = data_dir / "val"
-    train_loader = get_data_loader(train_dataset_path, size, batch_size, augment)
-    val_loader = get_data_loader(val_dataset_path, size, batch_size, augment)
-    return train_loader, val_loader
-
-
 if __name__ == "__main__":
     # Example usage
     dataset_path = "../../../data/IDRiD/train"
