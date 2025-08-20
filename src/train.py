@@ -1,5 +1,6 @@
 """Train a SimpleCNN model on a dataset of retinal images."""
 
+import os
 import argparse
 from datetime import datetime
 from pathlib import Path
@@ -171,6 +172,7 @@ def train_model(data_dir: Path, epochs: int = 10, batch_size: int = 32, lr: floa
     else:
         print("No best model weights found, saving current model state.")
 
+    os.makedirs("../checkpoints", exist_ok=True)
     torch.save(model.state_dict(), "../checkpoints/model.pth")
     print("Training done. Model saved as model.pth")
 
