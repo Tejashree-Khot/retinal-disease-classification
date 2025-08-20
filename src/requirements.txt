@@ -21,6 +21,7 @@ accelerate
 sentencepiece
 tokenizers
 optuna
+kagglehub
 
 # Computer vision
 opencv-python
