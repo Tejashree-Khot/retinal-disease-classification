@@ -74,18 +74,22 @@ def load_images(dataset_path: Path) -> tuple[list, list]:
     labels = []
     image_paths = []
 
-    data = pd.read_csv(dataset_path / "annotations.csv")[:1000]  # Limit to 300 samples for testing
+    data = pd.read_csv(dataset_path / "annotations.csv")[:3000]  # Limit to 300 samples for testing
+    print(f"Loading {len(data)} images from {dataset_path}...")
 
     dataset_path = Path(dataset_path)
     for row in tqdm(data.iterrows()):
-        label = row[1]["class"]
-        image_path = dataset_path / "images" / f"{row[1]['Image name']}.jpg"
-        if image_path.exists():
-            image_paths.append(image_path)
-            image = Image.open(image_path).convert("RGB")
-            image_array = np.array(image)
-            images.append(image_array)
-            labels.append(CLASSES_DICT[label])
+        try:
+            label = row[1]["class"]
+            image_path = dataset_path / "images" / f"{row[1]['Image name']}.jpg"
+            if image_path.exists():
+                image_paths.append(image_path)
+                image = Image.open(image_path).convert("RGB")
+                image_array = np.array(image)
+                images.append(image_array)
+                labels.append(CLASSES_DICT[label])
+        except Exception as e:
+            print(f"Error loading image {row[1]['Image name']}: {e}")
 
     print(f"Loaded {len(images)} images from {dataset_path}.")
     return images, labels

@@ -9,6 +9,7 @@ import wandb
 from torch import nn, optim
 from torch.utils.data import DataLoader
 from torchvision import datasets
+from tqdm import tqdm
 
 from dataloader.data_loader import get_data_loader
 from dataloader.data_preprocessing import get_transforms, load_image
@@ -53,7 +54,7 @@ def train_one_epoch(
     """Train the model for one epoch and return loss and accuracy."""
     model.train()
     running_loss, correct, total = 0.0, 0, 0
-    for batch_inputs, batch_labels in dataloader:
+    for batch_inputs, batch_labels in tqdm(dataloader):
         inputs_dev, labels_dev = batch_inputs.to(device), batch_labels.to(device)
         optimizer.zero_grad()
         outputs = model(inputs_dev)
@@ -74,7 +75,7 @@ def evaluate(
     model.eval()
     running_loss, correct, total = 0.0, 0, 0
     with torch.no_grad():
-        for batch_inputs, batch_labels in dataloader:
+        for batch_inputs, batch_labels in tqdm(dataloader):
             inputs_dev, labels_dev = batch_inputs.to(device), batch_labels.to(device)
             outputs = model(inputs_dev)
             loss = criterion(outputs, labels_dev)
@@ -92,8 +93,8 @@ def inference(
     model.eval()
     predictions = []
     with torch.no_grad():
-        for path in image_paths:
-            img = load_image(Path(path), 224).to(device)
+        for path in tqdm(image_paths):
+            img = load_image(Path(path), 448).to(device)
             outputs = model(img)
             _, pred = torch.max(outputs, 1)
             predictions.append(pred.item())
@@ -141,7 +142,7 @@ def train_model(data_dir: Path, epochs: int = 10, batch_size: int = 32, lr: floa
     best_val_acc = 0.0
     best_state_dict = None
 
-    for epoch in range(epochs):
+    for epoch in tqdm(range(epochs)):
         model.train()
         train_loss, train_acc = train_one_epoch(model, train_loader, criterion, optimizer, DEVICE)
         val_loss, val_acc = evaluate(model, val_loader, criterion, DEVICE)
