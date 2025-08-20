@@ -5,12 +5,13 @@ from typing import cast
 
 import pandas as pd
 import torch
-from data_utils import CLASSES_DICT
 from PIL import Image
 from torch import Tensor
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
 from tqdm import tqdm
+
+from dataloader.data_utils import CLASSES_DICT
 
 
 class CustomDataset(Dataset):
