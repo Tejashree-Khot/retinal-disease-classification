@@ -1,5 +1,6 @@
 """Train a SimpleCNN model on a dataset of retinal images."""
 
+import argparse
 from datetime import datetime
 from pathlib import Path
 from typing import Callable
@@ -176,5 +177,19 @@ def train_model(data_dir: Path, epochs: int = 10, batch_size: int = 32, lr: floa
     print("Training done. Model saved as model.pth")
 
 
+def make_parser():
+    """Create an argument parser for command line arguments."""
+    parser = argparse.ArgumentParser(description="Train a SimpleCNN model on retinal images.")
+    parser.add_argument(
+        "--data_dir", type=Path, required=True, help="Path to the training data directory."
+    )
+    parser.add_argument("--epochs", type=int, default=100, help="Number of training epochs.")
+    parser.add_argument("--batch_size", type=int, default=32, help="Batch size for training.")
+    parser.add_argument("--lr", type=float, default=0.001, help="Learning rate for the optimizer.")
+    return parser
+
+
 if __name__ == "__main__":
-    train_model(data_dir=Path("/data/IDRiD/train"), epochs=100, batch_size=32, lr=0.001)
+    parser = make_parser()
+    args = parser.parse_args()
+    train_model(data_dir=Path(args.data_dir), epochs=args.epoch, batch_size=32, lr=0.001)
