@@ -87,13 +87,20 @@ def get_data_loader(
 
     data = CustomDataset(dataset_path, data_transform)
 
-    data_loader = DataLoader(data, batch_size=batch_size, shuffle=True, num_workers=5)
+    data_loader = DataLoader(
+        data,
+        batch_size=batch_size,
+        shuffle=True,
+        num_workers=16,
+        pin_memory=True,
+        prefetch_factor=2,
+    )
     return data_loader
 
 
 if __name__ == "__main__":
     # Example usage
-    dataset_path = "/Users/somesh/workspace/data/IDRiD/Train"
+    dataset_path = "../../../data/IDRiD/Train"
     size = (448, 448)
     batch_size = 32
     augment = True

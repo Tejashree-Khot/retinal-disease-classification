@@ -9,6 +9,13 @@ from typing import Callable
 import torch
 import wandb
 from torch import nn, optim
+from torch.optim.lr_scheduler import (
+    CosineAnnealingLR,
+    CosineAnnealingWarmRestarts,
+    ReduceLROnPlateau,
+    StepLR,
+    _LRScheduler,
+)
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
@@ -28,14 +35,19 @@ def get_optimizer(
 
 def get_scheduler(
     optimizer: optim.Optimizer, step_size: int = 7, gamma: float = 0.1
-) -> optim.lr_scheduler.StepLR:
-    """Return a StepLR scheduler."""
-    return optim.lr_scheduler.StepLR(optimizer, step_size=step_size, gamma=gamma)
+) -> CosineAnnealingLR:
+    """Return a scheduler."""
+    return CosineAnnealingLR(optimizer, T_max=10, eta_min=1e-6)
+    # return ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5, verbose=True)
+    # return CosineAnnealingWarmRestarts(optimizer, T_0=10, T_mult=2, eta_min=1e-6)
+    # return StepLR(optimizer, step_size=step_size, gamma=gamma)
 
 
 def init_wandb():
     """Initialize Weights & Biases for experiment tracking."""
-    name_ith_timestamp = f"EfficientNet_B0_finetune_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    name_ith_timestamp = (
+        f"EfficientNet_B0_finetune_all_layers_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    )
     wandb.init(
         project="retinal-desease-classification",
         name=name_ith_timestamp,
@@ -123,16 +135,24 @@ def train_model(data_dir: Path, epochs: int = 10, batch_size: int = 32, lr: floa
 
     # Initialize the model
     print("Initializing model...")
-    model = get_efficientnet_model(num_classes=5, pretrained=True, fine_tune_all=False)
+    fine_tune_all = True  # Set to True to fine-tune all layers
+    if fine_tune_all:  # Fine-tune all layers
+        learning_rate = lr / 10
+    else:
+        learning_rate = lr
+    model_path = Path("../checkpoints/model.pth")  # Path to load pre-trained weights if available
+    model = get_efficientnet_model(
+        num_classes=5, pretrained=True, fine_tune_all=fine_tune_all, model_path=model_path
+    )
     model.to(DEVICE)
-    # model = SimpleCNN().to(DEVICE)
+
     print(f"Using device: {DEVICE}")
     print(f"Batch size: {batch_size}, Learning rate: {lr}, Epochs: {epochs}")
     print("Model loaded and ready for training.")
 
     # define loss function and optimizer
     criterion = nn.CrossEntropyLoss()  # Changed for multi-class classification
-    optimizer = get_optimizer(model, lr=lr)
+    optimizer = get_optimizer(model, lr=learning_rate)
     scheduler = get_scheduler(optimizer)
     # Initialize Weights & Biases
     init_wandb()
@@ -183,7 +203,7 @@ def make_parser():
         "--data_dir", type=Path, required=True, help="Path to the training data directory."
     )
     parser.add_argument("--epochs", type=int, default=100, help="Number of training epochs.")
-    parser.add_argument("--batch_size", type=int, default=32, help="Batch size for training.")
+    parser.add_argument("--batch_size", type=int, default=24, help="Batch size for training.")
     parser.add_argument("--lr", type=float, default=0.001, help="Learning rate for the optimizer.")
     return parser
 
