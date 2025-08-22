@@ -12,6 +12,7 @@ from torchvision import transforms
 from tqdm import tqdm
 
 from dataloader.data_utils import CLASSES_DICT
+from dataloader.data_preprocessing import get_efficient_net_data_transforms
 
 
 class CustomDataset(Dataset):
@@ -35,23 +36,37 @@ class CustomDataset(Dataset):
 
 
 def image_transform(
-    size: tuple | list, augment: bool, arch: str = "efficientnet-b0"
+    img_size: tuple | list, augment: bool, arch: str = "efficientnet-b0"
 ) -> transforms.Compose:
     """Image transformation for training and validation."""
     if arch == "efficientnet-b0":
-        mean = [0.485, 0.456, 0.406]
-        std = [0.229, 0.224, 0.225]
+        # Use the dedicated EfficientNet transforms
+        transforms_dict = get_efficient_net_data_transforms(
+            img_size if isinstance(img_size, int) else img_size[0]
+        )
+        return transforms_dict["train"] if augment else transforms_dict["val"]
     else:
+        # Use the previous transforms for other architectures
         mean, std = [0.0, 0.0, 0.0], [1.0, 1.0, 1.0]
 
-    data_transform = transforms.Compose(
-        [
-            transforms.Resize((size[0], size[1])),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=mean, std=std),
-        ]
-    )
-    return data_transform
+        if augment:
+            # Training transforms with augmentation
+            return transforms.Compose(
+                [
+                    transforms.Resize((size[0], size[1])),
+                    transforms.ToTensor(),
+                    transforms.Normalize(mean=mean, std=std),
+                ]
+            )
+        else:
+            # Validation transforms without augmentation
+            return transforms.Compose(
+                [
+                    transforms.Resize((img_size, img_size)),
+                    transforms.ToTensor(),
+                    transforms.Normalize(mean, std),
+                ]
+            )
 
 
 def load_images(dataset_path: Path) -> tuple[list[Path], list[int]]:
@@ -59,7 +74,7 @@ def load_images(dataset_path: Path) -> tuple[list[Path], list[int]]:
     image_paths = []
     labels = []
 
-    data = pd.read_csv(dataset_path / "annotations.csv")
+    data = pd.read_csv(dataset_path / "annotations.csv")[:20]
     print(f"Loading {len(data)} image_paths from {dataset_path}...")
 
     for row in tqdm(data.iterrows()):
