@@ -17,8 +17,11 @@ def get_efficientnet_model(
     """Return EfficientNet-B0 with final layer adjusted for num_classes."""
     model = models.efficientnet_b0(weights=EfficientNet_B0_Weights.DEFAULT if pretrained else None)
     # EfficientNet-B0's classifier is Sequential, last layer is Linear
-    in_features = model.classifier[-1].in_features
-    model.classifier[-1] = nn.Linear(in_features, num_classes)  # type: ignore
+    # dropout to reduce overfitting
+    model.classifier = nn.Sequential(
+        nn.Dropout(p=0.5, inplace=True),
+        nn.Linear(model.classifier[-1].in_features, num_classes),  # type: ignore
+    )
 
     for param in model.parameters():
         param.requires_grad = fine_tune_all
