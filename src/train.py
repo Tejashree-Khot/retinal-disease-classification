@@ -114,7 +114,13 @@ def inference(
     return predictions
 
 
-def train_model(data_dir: Path, epochs: int = 10, batch_size: int = 32, lr: float = 0.001):
+def train_model(
+    data_dir: Path,
+    epochs: int = 10,
+    batch_size: int = 32,
+    lr: float = 0.001,
+    unfreeze_strategy: str = "classifier",
+):
     """Train a SimpleCNN model on the specified dataset.
 
     Args:
@@ -135,16 +141,24 @@ def train_model(data_dir: Path, epochs: int = 10, batch_size: int = 32, lr: floa
 
     # Initialize the model
     print("Initializing model...")
-    fine_tune_all = True  # Set to True to fine-tune all layers
-    if fine_tune_all:  # Fine-tune all layers
+
+    # Set up unfreezing strategy
+    model_path = Path("../checkpoints/model.pth")  # Path to load pre-trained weights if available
+    if unfreeze_strategy == "all":
+        fine_tune_all = True
+    else:
+        fine_tune_all = False
+
+    model, unfreeze_model_layers = get_efficientnet_model(
+        num_classes=5, fine_tune_all=fine_tune_all, pretrained=True, model_path=model_path
+    )
+    model.to(DEVICE)
+
+    # Adjust learning rate if all layers are fine-tuned
+    if unfreeze_strategy == "all":
         learning_rate = lr / 10
     else:
         learning_rate = lr
-    model_path = Path("../checkpoints/model.pth")  # Path to load pre-trained weights if available
-    model = get_efficientnet_model(
-        num_classes=5, pretrained=True, fine_tune_all=fine_tune_all, model_path=model_path
-    )
-    model.to(DEVICE)
 
     print(f"Using device: {DEVICE}")
     print(f"Batch size: {batch_size}, Learning rate: {lr}, Epochs: {epochs}")
@@ -162,13 +176,23 @@ def train_model(data_dir: Path, epochs: int = 10, batch_size: int = 32, lr: floa
     best_state_dict = None
 
     for epoch in tqdm(range(epochs)):
+        # Unfreeze logic based on strategy
+        if unfreeze_strategy == "layer-by-layer":
+            # Gradually unfreeze more layers as epochs progress
+            # For example, every 5 epochs unfreeze one more block
+            stage = (epoch // 5) + 1  # You can adjust the schedule as needed
+            unfreeze_model_layers(stage)
+        elif unfreeze_strategy == "classifier":
+            unfreeze_model_layers(0)
+        # For "all", all layers are already unfrozen at model creation
+
         model.train()
         train_loss, train_acc = train_one_epoch(model, train_loader, criterion, optimizer, DEVICE)
         val_loss, val_acc = evaluate(model, test_loader, criterion, DEVICE)
         scheduler.step()
 
         # save best weights
-        if val_acc > best_val_acc:  # Example threshold for saving the model
+        if val_acc > best_val_acc:
             best_val_acc = val_acc
             best_state_dict = model.state_dict()
 
@@ -205,6 +229,14 @@ def make_parser():
     parser.add_argument("--epochs", type=int, default=100, help="Number of training epochs.")
     parser.add_argument("--batch_size", type=int, default=24, help="Batch size for training.")
     parser.add_argument("--lr", type=float, default=0.001, help="Learning rate for the optimizer.")
+
+    parser.add_argument(
+        "--unfreeze_strategy",
+        type=str,
+        default="classifier",
+        choices=["classifier", "layer-by-layer", "all"],
+        help="Unfreezing strategy: classifier (only classifier), layer-by-layer (gradually unfreeze), all (all layers)",
+    )
     return parser
 
 
@@ -212,5 +244,9 @@ if __name__ == "__main__":
     parser = make_parser()
     args = parser.parse_args()
     train_model(
-        data_dir=Path(args.data_dir), epochs=args.epochs, batch_size=args.batch_size, lr=args.lr
+        data_dir=Path(args.data_dir),
+        epochs=args.epochs,
+        batch_size=args.batch_size,
+        lr=args.lr,
+        unfreeze_strategy=args.unfreeze_strategy,
     )
