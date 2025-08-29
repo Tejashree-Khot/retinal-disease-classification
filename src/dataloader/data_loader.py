@@ -74,7 +74,7 @@ def load_images(dataset_path: Path) -> tuple[list[Path], list[int]]:
     image_paths = []
     labels = []
 
-    data = pd.read_csv(dataset_path / "annotations.csv")[:20]
+    data = pd.read_csv(dataset_path / "annotations.csv")
     print(f"Loading {len(data)} image_paths from {dataset_path}...")
 
     for row in tqdm(data.iterrows()):
