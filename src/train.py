@@ -23,6 +23,7 @@ from dataloader.data_loader import get_data_loader
 from dataloader.data_preprocessing import load_image
 from models.efficient_net import get_efficientnet_model
 
+
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
@@ -164,8 +165,8 @@ def train_model(
     print(f"Batch size: {batch_size}, Learning rate: {lr}, Epochs: {epochs}")
     print("Model loaded and ready for training.")
 
-    # define loss function and optimizer
-    criterion = nn.CrossEntropyLoss()  # Changed for multi-class classification
+    # Use standard CrossEntropyLoss (no class weights, sampler handles balancing)
+    criterion = nn.CrossEntropyLoss()
     optimizer = get_optimizer(model, lr=learning_rate)
     scheduler = get_scheduler(optimizer)
     # Initialize Weights & Biases
