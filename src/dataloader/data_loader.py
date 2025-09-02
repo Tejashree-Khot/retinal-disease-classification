@@ -1,5 +1,8 @@
 """PyTorch custom data loader."""
 
+# Allow running as a script by adding src/ to sys.path
+import sys
+from pathlib import Path as _Path
 from pathlib import Path
 from typing import cast
 
@@ -10,6 +13,8 @@ from torch import Tensor
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
 from tqdm import tqdm
+import numpy as np
+from torch.utils.data import WeightedRandomSampler
 
 from dataloader.data_utils import CLASSES_DICT
 from dataloader.data_preprocessing import get_efficient_net_data_transforms
@@ -74,7 +79,7 @@ def load_images(dataset_path: Path) -> tuple[list[Path], list[int]]:
     image_paths = []
     labels = []
 
-    data = pd.read_csv(dataset_path / "annotations.csv")
+    data = pd.read_csv(dataset_path / "annotations.csv")[:100]
     print(f"Loading {len(data)} image_paths from {dataset_path}...")
 
     for row in tqdm(data.iterrows()):
@@ -91,7 +96,11 @@ def load_images(dataset_path: Path) -> tuple[list[Path], list[int]]:
 
 
 def get_data_loader(
-    dataset_path: Path, size: tuple | list, batch_size: int, augment: bool
+    dataset_path: Path,
+    size: tuple | list,
+    batch_size: int,
+    augment: bool,
+    use_weighted_sampler: bool = False,
 ) -> DataLoader:
     """Get data loader for the dataset."""
     # for faster training, we load data images first,
@@ -99,17 +108,35 @@ def get_data_loader(
     # images, labels = load_images(dataset_path)
 
     data_transform = image_transform(size, augment)
-
     data = CustomDataset(dataset_path, data_transform)
 
-    data_loader = DataLoader(
-        data,
-        batch_size=batch_size,
-        shuffle=True,
-        num_workers=16,
-        pin_memory=True,
-        prefetch_factor=2,
-    )
+    if use_weighted_sampler:
+        # Calculate class counts
+
+        labels = data.labels
+        class_sample_count = np.bincount(labels)
+        class_weights = 1.0 / class_sample_count
+        sample_weights = [class_weights[label] for label in labels]
+        sampler = WeightedRandomSampler(
+            sample_weights, num_samples=len(sample_weights), replacement=True
+        )
+        data_loader = DataLoader(
+            data,
+            batch_size=batch_size,
+            sampler=sampler,
+            num_workers=16,
+            pin_memory=True,
+            prefetch_factor=2,
+        )
+    else:
+        data_loader = DataLoader(
+            data,
+            batch_size=batch_size,
+            shuffle=True,
+            num_workers=16,
+            pin_memory=True,
+            prefetch_factor=2,
+        )
     return data_loader
 
 
