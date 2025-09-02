@@ -72,5 +72,5 @@ def evaluate_model(model_path: Path, data_dir: Path, batch_size: int = 16) -> No
 
 if __name__ == "__main__":
     evaluate_model(
-        model_path=Path("../checkpoints/model.pth"), data_dir=Path("/workspace/data/IDRiD/train")
+        model_path=Path("checkpoints/model.pth"), data_dir=Path("/workspace/data/IDRiD/Train")
     )
