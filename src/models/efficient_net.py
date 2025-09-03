@@ -78,8 +78,3 @@ def get_efficientnet_model(
 
 if __name__ == "__main__":
     model, unfreeze = get_efficientnet_model()
-    print(model)
-    print(len(list(model.features)))
-    # unfreeze(1)
-    # for name, param in model.named_parameters():
-    #     print(f"{name}: {param.requires_grad}")
