@@ -19,12 +19,11 @@ Expected structure (example):
 data/
   raw/
     train/
-      DR/
-      AMD/
-      Glaucoma/
-      Normal/
-    val/
+      images/
+      annotations.csv
     test/
+      images/
+      annotations.csv
 ```
 Public sources you may adapt: APTOS 2019, DDR, Messidor (respect licenses).
 
