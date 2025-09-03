@@ -231,7 +231,9 @@ def make_parser():
     parser.add_argument(
         "--data_dir", type=Path, required=True, help="Path to the training data directory."
     )
-    parser.add_argument("--model", type=str, default="efficientnet-b0", help="Model architecture.")
+    parser.add_argument(
+        "--model_name", type=str, default="efficientnet-b0", help="Model architecture."
+    )
     parser.add_argument("--epochs", type=int, default=100, help="Number of training epochs.")
     parser.add_argument("--batch_size", type=int, default=24, help="Batch size for training.")
     parser.add_argument("--lr", type=float, default=0.001, help="Learning rate for the optimizer.")
@@ -251,7 +253,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     train_model(
         data_dir=Path(args.data_dir),
-        model=args.model,
+        model=args.model_name,
         epochs=args.epochs,
         batch_size=args.batch_size,
         lr=args.lr,
