@@ -17,27 +17,50 @@ import numpy as np
 from torch.utils.data import WeightedRandomSampler
 
 from dataloader.data_utils import CLASSES_DICT
-from dataloader.data_preprocessing import get_efficient_net_data_transforms
+from dataloader.data_preprocessing import get_efficient_net_data_transforms, tokenize_texts
+from transformers import BertTokenizer, BertModel
 
 
 class CustomDataset(Dataset):
-    """Pytorch custom dataloader."""
+    """PyTorch custom dataloader for images + text + labels."""
 
-    def __init__(self, dataset_path: Path, image_transform: transforms.Compose):
-        self.image_paths, self.labels = load_images(dataset_path)
+    def __init__(
+        self,
+        dataset_path: Path,
+        image_transform: transforms.Compose,
+        tokenizer: BertTokenizer,
+        max_length: int = 128,
+    ):
+        self.image_paths, self.texts, self.labels = load_images_and_text(dataset_path)
         self.image_transform = image_transform
+        self.tokenizer = tokenizer
+        self.max_length = max_length
 
     def __len__(self) -> int:
-        size = len(self.image_paths)
-        return size
+        return len(self.labels)
 
-    def __getitem__(self, index: int) -> tuple[Tensor, Tensor]:
-        label = self.labels[index]
+    def __getitem__(self, index: int) -> tuple[Tensor, Tensor, Tensor, Tensor]:
+        # --- Label ---
+        label = torch.tensor(self.labels[index], dtype=torch.long)
+
+        # --- Image ---
         image_path = self.image_paths[index]
         image = self.image_transform(Image.open(image_path).convert("RGB"))
         img_tensor = cast(Tensor, image)
-        label_tensor = torch.tensor(label, dtype=torch.long)
-        return img_tensor, label_tensor
+
+        # --- Text (tokenize on the fly) ---
+        text = str(self.texts[index])
+        encoding = self.tokenizer(
+            text,
+            padding="max_length",
+            truncation=True,
+            max_length=self.max_length,
+            return_tensors="pt",
+        )
+        input_ids = encoding["input_ids"].squeeze(0)  # shape [128]
+        attention_mask = encoding["attention_mask"].squeeze(0)  # shape [128]
+
+        return img_tensor, input_ids, attention_mask, label
 
 
 def image_transform(
@@ -74,9 +97,10 @@ def image_transform(
             )
 
 
-def load_images(dataset_path: Path) -> tuple[list[Path], list[int]]:
-    """Read image images and labels from the dataset."""
+def load_images_and_text(dataset_path: Path) -> tuple[list[Path], list[str], list[int]]:
+    """Read image images, text and labels from the dataset."""
     image_paths = []
+    texts = []
     labels = []
 
     data = pd.read_csv(dataset_path / "annotations.csv")[:100]
@@ -85,14 +109,16 @@ def load_images(dataset_path: Path) -> tuple[list[Path], list[int]]:
     for row in tqdm(data.iterrows()):
         label = row[1]["class"]
         image_path = dataset_path / "images" / f"{row[1]['Image name']}"
+        text = row[5]["caption"]
         if image_path.exists():
             image_paths.append(image_path)
+            texts.append(text)
             labels.append(int(CLASSES_DICT[label]))
         else:
             print(f"Image {image_path} does not exist, skipping.")
 
     print(f"Loaded {len(image_paths)} image_paths from {dataset_path}.")
-    return image_paths, labels
+    return image_paths, texts, labels
 
 
 def get_data_loader(
@@ -100,28 +126,31 @@ def get_data_loader(
     size: tuple | list,
     batch_size: int,
     augment: bool,
+    tokenizer,
     use_weighted_sampler: bool = False,
 ) -> DataLoader:
-    """Get data loader for the dataset."""
-    # for faster training, we load data images first,
-    # if memory is not an issue, you can uncomment the next line
-    # images, labels = load_images(dataset_path)
+    """Get multimodal data loader (image + text + label)."""
 
+    # Image transform
     data_transform = image_transform(size, augment)
-    data = CustomDataset(dataset_path, data_transform)
 
+    # Create dataset
+    dataset = CustomDataset(
+        dataset_path=dataset_path, image_transform=data_transform, tokenizer=tokenizer
+    )
     if use_weighted_sampler:
-        # Calculate class counts
-
-        labels = data.labels
+        # Compute weights for class balancing
+        labels = dataset.labels
         class_sample_count = np.bincount(labels)
         class_weights = 1.0 / class_sample_count
         sample_weights = [class_weights[label] for label in labels]
+
         sampler = WeightedRandomSampler(
             sample_weights, num_samples=len(sample_weights), replacement=True
         )
+
         data_loader = DataLoader(
-            data,
+            dataset,
             batch_size=batch_size,
             sampler=sampler,
             num_workers=16,
@@ -130,13 +159,14 @@ def get_data_loader(
         )
     else:
         data_loader = DataLoader(
-            data,
+            dataset,
             batch_size=batch_size,
             shuffle=True,
             num_workers=16,
             pin_memory=True,
             prefetch_factor=2,
         )
+
     return data_loader
 
 
@@ -149,7 +179,7 @@ if __name__ == "__main__":
 
     data_loader = get_data_loader(Path(dataset_path), size, batch_size, augment)
 
-    for images, labels in data_loader:
+    for images, text, labels in data_loader:
         print(images.shape, labels)
         break  # Just to show the first batch
     print("Data loader is ready.")

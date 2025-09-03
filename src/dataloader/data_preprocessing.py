@@ -4,6 +4,7 @@ from typing import Callable
 import torch
 from PIL import Image
 from torchvision import transforms
+from transformers import BertTokenizer, BertModel
 
 
 def get_efficient_net_data_transforms(img_size: int = 224) -> dict[str, Callable]:
@@ -69,3 +70,16 @@ def load_image(image_path: Path, image_size: int = 224) -> torch.Tensor:
         tensor_image = transforms.ToTensor()(tensor_image)
     tensor_image = tensor_image.unsqueeze(0)
     return tensor_image
+
+
+def tokenize_text(max_length: int = 128) -> BertTokenizer:
+    """Initialize and return a BERT tokenizer.
+
+    Args:
+        max_length (int): Maximum length for tokenization.
+
+    Returns:
+        BertTokenizer: Initialized BERT tokenizer.
+    """
+    tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
+    return tokenizer
