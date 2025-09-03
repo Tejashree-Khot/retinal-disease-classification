@@ -1,4 +1,4 @@
-"""Train a SimpleCNN model on a dataset of retinal images."""
+"""Train a Efficient_net model on a dataset of retinal images."""
 
 import argparse
 import os
@@ -121,8 +121,9 @@ def train_model(
     batch_size: int = 32,
     lr: float = 0.001,
     unfreeze_strategy: str = "classifier",
+    model: str = "efficientnet-b0",
 ):
-    """Train a SimpleCNN model on the specified dataset.
+    """Train a Efficientnet model on the specified dataset.
 
     Args:
         data_dir (str): Path to the training data directory.
@@ -144,7 +145,7 @@ def train_model(
     print("Initializing model...")
 
     # Set up unfreezing strategy
-    model_path = Path("../checkpoints/model.pth")  # Path to load pre-trained weights if available
+    model_path = Path("checkpoints/model.pth")  # Path to load pre-trained weights if available
     if unfreeze_strategy == "all":
         fine_tune_all = True
     else:
@@ -186,6 +187,8 @@ def train_model(
         elif unfreeze_strategy == "classifier":
             unfreeze_model_layers(0)
         # For "all", all layers are already unfrozen at model creation
+        elif unfreeze_strategy == "all":
+            unfreeze_model_layers(len(list(model.features)) + 1)
 
         model.train()
         train_loss, train_acc = train_one_epoch(model, train_loader, criterion, optimizer, DEVICE)
@@ -206,6 +209,7 @@ def train_model(
         print(f"Epoch {epoch + 1}/{epochs} completed.")
 
     print("Training completed.")
+    print(f"model: {model}")
     # Finish the Weights & Biases run
     wandb.finish()
 
@@ -223,10 +227,11 @@ def train_model(
 
 def make_parser():
     """Create an argument parser for command line arguments."""
-    parser = argparse.ArgumentParser(description="Train a SimpleCNN model on retinal images.")
+    parser = argparse.ArgumentParser(description="Train a efficient_net model on retinal images.")
     parser.add_argument(
         "--data_dir", type=Path, required=True, help="Path to the training data directory."
     )
+    parser.add_argument("--model", type=str, default="efficientnet-b0", help="Model architecture.")
     parser.add_argument("--epochs", type=int, default=100, help="Number of training epochs.")
     parser.add_argument("--batch_size", type=int, default=24, help="Batch size for training.")
     parser.add_argument("--lr", type=float, default=0.001, help="Learning rate for the optimizer.")
@@ -246,6 +251,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     train_model(
         data_dir=Path(args.data_dir),
+        model=args.model,
         epochs=args.epochs,
         batch_size=args.batch_size,
         lr=args.lr,
