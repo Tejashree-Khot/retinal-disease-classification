@@ -19,9 +19,12 @@ from torch.optim.lr_scheduler import (
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
+
 from dataloader.data_loader import get_data_loader
 from dataloader.data_preprocessing import load_image
 from models.efficient_net import get_efficientnet_model
+from src.multimodel import MultiModalModel
+from transformers import BertTokenizer
 
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -64,39 +67,65 @@ def train_one_epoch(
     criterion: nn.Module,
     optimizer: optim.Optimizer,
     device: torch.device | str,
+    multimodal: bool = False,
 ) -> tuple[float, float]:
     """Train the model for one epoch and return loss and accuracy."""
     model.train()
     running_loss, correct, total = 0.0, 0, 0
-    for batch_inputs, batch_labels in tqdm(dataloader):
-        inputs_dev, labels_dev = batch_inputs.to(device), batch_labels.to(device)
-        optimizer.zero_grad()
-        outputs = model(inputs_dev)
-        loss = criterion(outputs, labels_dev)
+    for batch in tqdm(dataloader):
+        if multimodal:
+            images, input_ids, attention_mask, labels = batch
+            images = images.to(device)
+            input_ids = input_ids.to(device)
+            attention_mask = attention_mask.to(device)
+            labels = labels.to(device)
+            optimizer.zero_grad()
+            outputs = model(images, input_ids, attention_mask)
+        else:
+            batch_inputs, batch_labels = batch
+            inputs_dev, labels_dev = batch_inputs.to(device), batch_labels.to(device)
+            optimizer.zero_grad()
+            outputs = model(inputs_dev)
+            labels = labels_dev
+        loss = criterion(outputs, labels)
         loss.backward()
         optimizer.step()
-        running_loss += loss.item() * inputs_dev.size(0)
+        running_loss += loss.item() * labels.size(0)
         _, preds = torch.max(outputs, 1)
-        correct += (preds == labels_dev).sum().item()
-        total += labels_dev.size(0)
+        correct += (preds == labels).sum().item()
+        total += labels.size(0)
     return running_loss / total, correct / total
 
 
 def evaluate(
-    model: nn.Module, dataloader: DataLoader, criterion: nn.Module, device: torch.device | str
+    model: nn.Module,
+    dataloader: DataLoader,
+    criterion: nn.Module,
+    device: torch.device | str,
+    multimodal: bool = False,
 ) -> tuple[float, float]:
     """Evaluate the model and return loss and accuracy."""
     model.eval()
     running_loss, correct, total = 0.0, 0, 0
     with torch.no_grad():
-        for batch_inputs, batch_labels in tqdm(dataloader):
-            inputs_dev, labels_dev = batch_inputs.to(device), batch_labels.to(device)
-            outputs = model(inputs_dev)
-            loss = criterion(outputs, labels_dev)
-            running_loss += loss.item() * inputs_dev.size(0)
+        for batch in tqdm(dataloader):
+            if multimodal:
+                images, input_ids, attention_mask, labels = batch
+                images = images.to(device)
+                input_ids = input_ids.to(device)
+                attention_mask = attention_mask.to(device)
+                labels = labels.to(device)
+                outputs = model(images, input_ids, attention_mask)
+            else:
+                batch_inputs, batch_labels = batch
+                inputs_dev, labels_dev = batch_inputs.to(device), batch_labels.to(device)
+                outputs = model(inputs_dev)
+                labels = labels_dev
+            loss = criterion(outputs, labels)
+            running_loss += loss.item() * labels.size(0)
             _, preds = torch.max(outputs, 1)
-            correct += (preds == labels_dev).sum().item()
-            total += labels_dev.size(0)
+            correct += (preds == labels).sum().item()
+            total += labels.size(0)
     return running_loss / total, correct / total
 
 
@@ -122,6 +151,7 @@ def train_model(
     lr: float = 0.001,
     unfreeze_strategy: str = "classifier",
     model: str = "efficientnet-b0",
+    multimodal: bool = False,
 ):
     """Train a Efficientnet model on the specified dataset.
 
@@ -131,33 +161,41 @@ def train_model(
         batch_size (int): Batch size for training.
         lr (float): Learning rate for the optimizer.
     """
+
     image_size = (448, 448)  # Resize images to this size
-    # Load the training data
     print("Loading training data...")
     train_dir = data_dir / "Train"
-    train_loader = get_data_loader(train_dir, size=image_size, batch_size=batch_size, augment=True)
-    print("Training data loaded successfully.")
-
     test_dir = data_dir / "Test"
-    test_loader = get_data_loader(test_dir, size=image_size, batch_size=batch_size, augment=False)
 
-    # Initialize the model
-    print("Initializing model...")
-
-    # Set up unfreezing strategy
-    model_path = Path("checkpoints/model.pth")  # Path to load pre-trained weights if available
-    if unfreeze_strategy == "all":
-        fine_tune_all = True
+    if multimodal:
+        tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
+        train_loader = get_data_loader(
+            train_dir, size=image_size, batch_size=batch_size, augment=True, tokenizer=tokenizer
+        )
+        test_loader = get_data_loader(
+            test_dir, size=image_size, batch_size=batch_size, augment=False, tokenizer=tokenizer
+        )
+        model = MultiModalModel(num_classes=5)
+        unfreeze_model_layers = lambda x: None  # No unfreezing logic for multimodal
     else:
-        fine_tune_all = False
+        train_loader = get_data_loader(
+            train_dir, size=image_size, batch_size=batch_size, augment=True
+        )
+        test_loader = get_data_loader(
+            test_dir, size=image_size, batch_size=batch_size, augment=False
+        )
+        # Initialize the model
+        model_path = Path("checkpoints/model.pth")  # Path to load pre-trained weights if available
+        if unfreeze_strategy == "all":
+            fine_tune_all = True
+        else:
+            fine_tune_all = False
+        model, unfreeze_model_layers = get_efficientnet_model(
+            num_classes=5, fine_tune_all=fine_tune_all, pretrained=True, model_path=model_path
+        )
 
-    model, unfreeze_model_layers = get_efficientnet_model(
-        num_classes=5, fine_tune_all=fine_tune_all, pretrained=True, model_path=model_path
-    )
     model.to(DEVICE)
-
-    # Adjust learning rate if all layers are fine-tuned
-    if unfreeze_strategy == "all":
+    if unfreeze_strategy == "all" and not multimodal:
         learning_rate = lr / 10
     else:
         learning_rate = lr
@@ -166,11 +204,9 @@ def train_model(
     print(f"Batch size: {batch_size}, Learning rate: {lr}, Epochs: {epochs}")
     print("Model loaded and ready for training.")
 
-    # Use standard CrossEntropyLoss (no class weights, sampler handles balancing)
     criterion = nn.CrossEntropyLoss()
     optimizer = get_optimizer(model, lr=learning_rate)
     scheduler = get_scheduler(optimizer)
-    # Initialize Weights & Biases
     init_wandb()
     print("Starting training...")
 
@@ -178,21 +214,21 @@ def train_model(
     best_state_dict = None
 
     for epoch in tqdm(range(epochs)):
-        # Unfreeze logic based on strategy
-        if unfreeze_strategy == "layer-by-layer":
-            # Gradually unfreeze more layers as epochs progress
-            # For example, every 5 epochs unfreeze one more block
-            stage = (epoch // 5) + 1  # You can adjust the schedule as needed
-            unfreeze_model_layers(stage)
-        elif unfreeze_strategy == "classifier":
-            unfreeze_model_layers(0)
-        # For "all", all layers are already unfrozen at model creation
-        elif unfreeze_strategy == "all":
-            unfreeze_model_layers(len(list(model.features)) + 1)
+        if not multimodal:
+            # Unfreeze logic based on strategy
+            if unfreeze_strategy == "layer-by-layer":
+                stage = (epoch // 5) + 1
+                unfreeze_model_layers(stage)
+            elif unfreeze_strategy == "classifier":
+                unfreeze_model_layers(0)
+            elif unfreeze_strategy == "all":
+                unfreeze_model_layers(len(list(model.features)) + 1)
 
         model.train()
-        train_loss, train_acc = train_one_epoch(model, train_loader, criterion, optimizer, DEVICE)
-        val_loss, val_acc = evaluate(model, test_loader, criterion, DEVICE)
+        train_loss, train_acc = train_one_epoch(
+            model, train_loader, criterion, optimizer, DEVICE, multimodal=multimodal
+        )
+        val_loss, val_acc = evaluate(model, test_loader, criterion, DEVICE, multimodal=multimodal)
         scheduler.step()
 
         # save best weights
@@ -245,6 +281,10 @@ def make_parser():
         choices=["classifier", "layer-by-layer", "all"],
         help="Unfreezing strategy: classifier (only classifier), layer-by-layer (gradually unfreeze), all (all layers)",
     )
+
+    parser.add_argument(
+        "--multimodal", action="store_true", help="Enable multimodal (image+text) training."
+    )
     return parser
 
 
@@ -258,4 +298,5 @@ if __name__ == "__main__":
         batch_size=args.batch_size,
         lr=args.lr,
         unfreeze_strategy=args.unfreeze_strategy,
+        multimodal=args.multimodal,
     )
