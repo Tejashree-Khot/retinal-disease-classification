@@ -59,7 +59,11 @@ class BaseModel(nn.Module, ABC):
 
     def predict(self, image: Tensor) -> Tensor:
         """Predict the class of an image."""
-        # add softmax to the output
         with torch.no_grad():
             output = self.model(image)
             return torch.softmax(output, dim=1)
+
+    @abstractmethod
+    def get_feature_layer(self) -> nn.Module:
+        """Get the layer to use for feature extraction (Grad-CAM target)."""
+        pass

@@ -62,3 +62,7 @@ class VGGModel(BaseModel):
         """Unfreeze the classifier head."""
         for param in self.model.classifier.parameters():
             param.requires_grad = True
+
+    def get_feature_layer(self) -> nn.Module:
+        """Get the last convolutional layer for feature extraction."""
+        return self.model.features[-1]

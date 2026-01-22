@@ -28,7 +28,7 @@ class ResNetModel(BaseModel):
     Supports ResNet-18, 34, 50, 101, and 152 with ImageNet pretrained weights.
     """
 
-    def __init__(self, num_classes: int, pretrained: bool = True, variant: str = "resnet18"):
+    def __init__(self, num_classes: int, pretrained: bool = True, variant: str = "resnet50"):
         """Initialize ResNet model."""
         if variant.lower() not in RESNET_VARIANTS:
             raise ValueError(
@@ -62,3 +62,7 @@ class ResNetModel(BaseModel):
         """Unfreeze the classifier head (fc layer)."""
         for param in self.model.fc.parameters():
             param.requires_grad = True
+
+    def get_feature_layer(self) -> nn.Module:
+        """Get the last convolutional layer for feature extraction."""
+        return self.model.layer4[-1]

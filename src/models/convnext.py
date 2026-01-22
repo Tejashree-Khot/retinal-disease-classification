@@ -29,7 +29,7 @@ class ConvNeXtModel(BaseModel):
     Supports Tiny, Small, Base, and Large variants with ImageNet pretrained weights.
     """
 
-    def __init__(self, num_classes: int, pretrained: bool = True, variant: str = "tiny"):
+    def __init__(self, num_classes: int, pretrained: bool = True, variant: str = "large"):
         """Initialize ConvNeXt model."""
         if variant.lower() not in CONVNEXT_VARIANTS:
             raise ValueError(
@@ -58,9 +58,13 @@ class ConvNeXtModel(BaseModel):
 
     def get_input_size(self) -> tuple[int, int]:
         """Get recommended input size for ConvNeXt."""
-        return (224, 224)
+        return (512, 512)
 
     def unfreeze_classifier(self) -> None:
         """Unfreeze the classifier head."""
         for param in self.model.classifier.parameters():
             param.requires_grad = True
+
+    def get_feature_layer(self) -> nn.Module:
+        """Get the last convolutional block for feature extraction."""
+        return self.model.features[-1][-1]

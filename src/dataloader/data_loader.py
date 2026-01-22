@@ -67,7 +67,7 @@ def get_data_loader(
 if __name__ == "__main__":
     # Example usage
     dataset_path = Path("../data/IDRiD/Train")
-    size = (448, 448)
+    size = (512, 512)
     batch_size = 32
 
     dataset = CustomDataset(dataset_path=dataset_path, size=size, data_type="train")
