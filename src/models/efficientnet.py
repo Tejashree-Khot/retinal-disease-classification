@@ -46,7 +46,7 @@ class EfficientNetModel(BaseModel):
     Supports variants B0 through B7 with ImageNet pretrained weights.
     """
 
-    def __init__(self, num_classes: int, pretrained: bool = True, variant: str = "b0"):
+    def __init__(self, num_classes: int, pretrained: bool = True, variant: str = "b4"):
         """Initialize EfficientNet model."""
         if variant.lower() not in EFFICIENTNET_VARIANTS:
             raise ValueError(
@@ -69,7 +69,7 @@ class EfficientNetModel(BaseModel):
 
         # Replace classifier with custom head
         model.classifier = nn.Sequential(
-            nn.Dropout(p=0.2, inplace=True), nn.Linear(in_features, self.num_classes)
+            nn.Dropout(p=0.5, inplace=True), nn.Linear(in_features, self.num_classes)
         )
 
         return model
@@ -78,7 +78,7 @@ class EfficientNetModel(BaseModel):
         """Get recommended input size for this variant."""
         return EFFICIENTNET_INPUT_SIZES[self.variant]
 
-    def _unfreeze_classifier(self) -> None:
+    def unfreeze_classifier(self) -> None:
         """Unfreeze the classifier head."""
         for param in self.model.classifier.parameters():
             param.requires_grad = True

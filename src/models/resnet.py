@@ -58,7 +58,7 @@ class ResNetModel(BaseModel):
         """Get recommended input size for ResNet."""
         return (224, 224)
 
-    def _unfreeze_classifier(self) -> None:
+    def unfreeze_classifier(self) -> None:
         """Unfreeze the classifier head (fc layer)."""
         for param in self.model.fc.parameters():
             param.requires_grad = True

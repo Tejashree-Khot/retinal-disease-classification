@@ -45,8 +45,7 @@ class BaseModel(nn.Module, ABC):
         """Freeze backbone layers, keeping only classifier trainable."""
         for param in self.model.parameters():
             param.requires_grad = False
-        # Unfreeze classifier - subclasses should override if needed
-        self._unfreeze_classifier()
+        self.unfreeze_classifier()
 
     def unfreeze_all(self) -> None:
         """Unfreeze all layers for full fine-tuning."""
@@ -54,7 +53,7 @@ class BaseModel(nn.Module, ABC):
             param.requires_grad = True
 
     @abstractmethod
-    def _unfreeze_classifier(self) -> None:
+    def unfreeze_classifier(self) -> None:
         """Unfreeze the classifier head. To be implemented by subclasses."""
         pass
 

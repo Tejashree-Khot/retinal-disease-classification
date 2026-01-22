@@ -108,11 +108,18 @@ class Trainer:
                 "weight_decay": self.config.weight_decay,
                 "scheduler": self.config.scheduler,
             },
+            dir=self.config.wandb_dir,
         )
 
     def train(self) -> dict:
         """Main training loop."""
         LOGGER.info(f"Starting training on {self.device}")
+
+        # unfreeze all layers if unfreeze_all is True
+        if self.config.unfreeze_all:
+            self.model.unfreeze_all()
+        else:
+            self.model.freeze_backbone()
 
         for epoch in range(self.config.epochs):
             train_loss, train_acc = self._train_epoch(epoch)

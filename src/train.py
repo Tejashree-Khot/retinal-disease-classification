@@ -15,11 +15,11 @@ def main() -> None:
 
     config = TrainerConfig(
         model_name="efficientnet",
-        num_classes=5,
+        num_classes=4,
         train_path=Path(__file__).parent.parent / "data" / "IDRiD" / "Train",
         val_path=Path(__file__).parent.parent / "data" / "IDRiD" / "Test",
         epochs=50,
-        batch_size=32,
+        batch_size=16,
         learning_rate=1e-4,
         weight_decay=1e-5,
         scheduler="cosine",

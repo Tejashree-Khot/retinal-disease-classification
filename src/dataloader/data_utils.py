@@ -11,12 +11,6 @@ scattered across the codebase and makes it easy to update label ordering.
 
 from collections import OrderedDict
 
-CLASSES = [
-    "Clinically_Significant_Macular_Edema",
-    "No_DR",
-    "normal",
-    "Mild_Moderate_NPDR",
-    "Severe_PDR",
-]
+CLASSES = ["No_DR", "Mild_Moderate_NPDR", "Clinically_Significant_Macular_Edema", "Severe_PDR"]
 
 CLASSES_DICT = OrderedDict(zip(CLASSES, range(len(CLASSES))))

@@ -58,7 +58,7 @@ class VGGModel(BaseModel):
         """Get recommended input size for VGG."""
         return (224, 224)
 
-    def _unfreeze_classifier(self) -> None:
+    def unfreeze_classifier(self) -> None:
         """Unfreeze the classifier head."""
         for param in self.model.classifier.parameters():
             param.requires_grad = True

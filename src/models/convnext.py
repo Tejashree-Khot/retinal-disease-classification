@@ -60,7 +60,7 @@ class ConvNeXtModel(BaseModel):
         """Get recommended input size for ConvNeXt."""
         return (224, 224)
 
-    def _unfreeze_classifier(self) -> None:
+    def unfreeze_classifier(self) -> None:
         """Unfreeze the classifier head."""
         for param in self.model.classifier.parameters():
             param.requires_grad = True
