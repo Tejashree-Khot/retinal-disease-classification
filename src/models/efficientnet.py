@@ -46,7 +46,7 @@ class EfficientNetModel(BaseModel):
     Supports variants B0 through B7 with ImageNet pretrained weights.
     """
 
-    def __init__(self, num_classes: int, pretrained: bool = True, variant: str = "b4"):
+    def __init__(self, num_classes: int, pretrained: bool = True, variant: str = "b7"):
         """Initialize EfficientNet model."""
         if variant.lower() not in EFFICIENTNET_VARIANTS:
             raise ValueError(

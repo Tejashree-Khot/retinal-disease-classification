@@ -20,7 +20,7 @@ from models.model_factory import create_model
 CAM_METHODS = {"gradcam": GradCAM, "gradcam++": GradCAMPlusPlus, "scorecam": ScoreCAM}
 
 
-class FeatureMapVisualizer:
+class GradCAMVisualizer:
     """Grad-CAM visualization utility."""
 
     def __init__(
@@ -132,5 +132,5 @@ if __name__ == "__main__":
 
     image_paths = list(image_dir.glob("*.jpg"))[:8]
 
-    visualizer = FeatureMapVisualizer(model, method="gradcam", device="cpu")
+    visualizer = GradCAMVisualizer(model, method="gradcam", device="cpu")
     visualizer.visualize_batch(image_paths=image_paths, save_path=str(output_path), show=False)

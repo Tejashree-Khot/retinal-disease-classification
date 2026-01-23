@@ -5,7 +5,7 @@ import logging
 import torch
 import torch.nn as nn
 import wandb
-from sklearn.metrics import f1_score, precision_score, recall_score
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 from torch.optim import SGD, AdamW
 from torch.optim.lr_scheduler import CosineAnnealingLR, LRScheduler, StepLR
 from tqdm import tqdm
@@ -145,9 +145,9 @@ class Trainer:
             current_lr = self.optimizer.param_groups[0]["lr"]
             LOGGER.info(
                 f"Epoch {epoch + 1}/{self.config.epochs} - "
-                f"Train Loss: {train_loss:.4f}, Train F1: {train_metrics['f1']:.4f}, "
+                f"Train Loss: {train_loss:.4f}, Train Accuracy: {train_metrics['accuracy']:.4f}, Train F1: {train_metrics['f1']:.4f}, "
                 f"Train Precision: {train_metrics['precision']:.4f}, Train Recall: {train_metrics['recall']:.4f} - "
-                f"Val Loss: {val_loss:.4f}, Val F1: {val_metrics['f1']:.4f}, "
+                f"Val Loss: {val_loss:.4f}, Val Accuracy: {val_metrics['accuracy']:.4f}, Val F1: {val_metrics['f1']:.4f}, "
                 f"Val Precision: {val_metrics['precision']:.4f}, Val Recall: {val_metrics['recall']:.4f} - "
                 f"LR: {current_lr:.6f}"
             )
@@ -157,10 +157,12 @@ class Trainer:
                     {
                         "epoch": epoch + 1,
                         "train_loss": train_loss,
+                        "train_accuracy": train_metrics["accuracy"],
                         "train_f1": train_metrics["f1"],
                         "train_precision": train_metrics["precision"],
                         "train_recall": train_metrics["recall"],
                         "val_loss": val_loss,
+                        "val_accuracy": val_metrics["accuracy"],
                         "val_f1": val_metrics["f1"],
                         "val_precision": val_metrics["precision"],
                         "val_recall": val_metrics["recall"],
@@ -206,11 +208,13 @@ class Trainer:
             current_f1 = f1_score(all_labels, all_preds, average="macro", zero_division=0)
             pbar.set_postfix({"loss": f"{loss.item():.4f}", "f1": f"{current_f1:.4f}"})
 
+        accuracy = accuracy_score(all_labels, all_preds)
         f1 = f1_score(all_labels, all_preds, average="macro", zero_division=0)
         precision = precision_score(all_labels, all_preds, average="macro", zero_division=0)
         recall = recall_score(all_labels, all_preds, average="macro", zero_division=0)
 
         return total_loss / len(self.train_loader), {
+            "accuracy": accuracy,
             "f1": f1,
             "precision": precision,
             "recall": recall,
@@ -239,11 +243,13 @@ class Trainer:
                 current_f1 = f1_score(all_labels, all_preds, average="macro", zero_division=0)
                 pbar.set_postfix({"loss": f"{loss.item():.4f}", "f1": f"{current_f1:.4f}"})
 
+        accuracy = accuracy_score(all_labels, all_preds)
         f1 = f1_score(all_labels, all_preds, average="macro", zero_division=0)
         precision = precision_score(all_labels, all_preds, average="macro", zero_division=0)
         recall = recall_score(all_labels, all_preds, average="macro", zero_division=0)
 
         return total_loss / len(self.val_loader), {
+            "accuracy": accuracy,
             "f1": f1,
             "precision": precision,
             "recall": recall,
@@ -252,15 +258,16 @@ class Trainer:
     def _save_checkpoint(self, epoch: int, metrics: dict, is_best: bool = False) -> None:
         """Save model checkpoint."""
         checkpoint_metrics = {
+            "accuracy": metrics["accuracy"],
             "f1": metrics["f1"],
             "precision": metrics["precision"],
             "recall": metrics["recall"],
             "epoch": epoch,
         }
         filename = (
-            f"{self.config.model_name}_best_model.pt"
+            f"{self.config.model_name}{self.model.variant}_best_model.pt"
             if is_best
-            else f"{self.config.model_name}_checkpoint_epoch_{epoch}.pt"
+            else f"{self.config.model_name}{self.model.variant}_checkpoint_epoch_{epoch}.pt"
         )
         path = self.config.checkpoint_dir / filename
 
