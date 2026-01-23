@@ -42,9 +42,10 @@ def get_image_transforms(size: tuple[int], data_type: str) -> Callable:
             [
                 transforms.RandomResizedCrop(size, scale=(0.85, 1.0), ratio=(0.9, 1.1)),
                 transforms.RandomHorizontalFlip(),
-                transforms.RandomVerticalFlip(),
                 transforms.RandomRotation(10),
                 transforms.ColorJitter(brightness=0.1, contrast=0.1),
+                transforms.GaussianBlur(kernel_size=3, sigma=(0.1, 1.0)),
+                # transforms.RandomApply([CLAHE()], p=0.3),
                 transforms.RandomAffine(degrees=0, translate=(0.05, 0.05), shear=5),
                 transforms.ToTensor(),
                 transforms.Normalize(mean, std),
@@ -84,11 +85,11 @@ def load_image_paths_and_labels(dataset_path: Path) -> tuple[list[Path], list[in
     LOGGER.info(f"Loading {len(data)} image_paths from {dataset_path}...")
 
     for row in data.itertuples(index=False):
-        label = row[3]
+        label = row[2]
         image_path = dataset_path / "images" / f"{row[0]}"
 
         if image_path.exists():
             image_paths.append(image_path)
-            labels.append(int(CLASSES_DICT[label]))
+            labels.append(int(CLASSES_DICT[str(label)]))
     LOGGER.info(f"Loaded {len(image_paths)} image_paths from {dataset_path}.")
     return image_paths, labels

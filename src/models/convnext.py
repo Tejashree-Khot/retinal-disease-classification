@@ -49,16 +49,16 @@ class ConvNeXtModel(BaseModel):
 
         # Get the number of input features for the classifier
         # ConvNeXt classifier structure: Sequential(LayerNorm, Flatten, Linear)
-        in_features = model.classifier[2].in_features
+        in_features = model.classifier[-1].in_features
 
         # Replace the last linear layer in classifier
-        model.classifier[2] = nn.Linear(in_features, self.num_classes)
+        model.classifier[-1] = nn.Linear(in_features, self.num_classes)
 
         return model
 
     def get_input_size(self) -> tuple[int, int]:
         """Get recommended input size for ConvNeXt."""
-        return (512, 512)
+        return (448, 448)
 
     def unfreeze_classifier(self) -> None:
         """Unfreeze the classifier head."""
@@ -66,5 +66,5 @@ class ConvNeXtModel(BaseModel):
             param.requires_grad = True
 
     def get_feature_layer(self) -> nn.Module:
-        """Get the last convolutional block for feature extraction."""
-        return self.model.features[-1][-1]
+        """Get the last convolutional layer of the last block for feature extraction."""
+        return self.model.features[-1][-1].block[0]
