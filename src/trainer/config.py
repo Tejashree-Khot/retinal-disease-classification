@@ -15,8 +15,8 @@ class TrainerConfig:
     val_path: Path
     num_classes: int = len(CLASSES)
     epochs: int = 20
-    batch_size: int = 32
-    learning_rate: float = 1e-3
+    batch_size: int = 8
+    learning_rate: float = 5e-4
     weight_decay: float = 1e-5
     scheduler: str = "cosine"
     early_stopping_patience: int = 10
@@ -28,4 +28,5 @@ class TrainerConfig:
     use_weighted_sampler: bool = True
     pretrained: bool = True
     unfreeze_all: bool = True
-    unfreeze_epoch: int = 10
+    unfreeze_epoch: int = 0
+    optimizer: str = "adam"

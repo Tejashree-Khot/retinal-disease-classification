@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 import wandb
 from sklearn.metrics import f1_score, precision_score, recall_score
-from torch.optim import AdamW
+from torch.optim import SGD, AdamW
 from torch.optim.lr_scheduler import CosineAnnealingLR, LRScheduler, StepLR
 from tqdm import tqdm
 
@@ -65,13 +65,21 @@ class Trainer:
         LOGGER.info(f"Model: {self.config.model_name}, Parameters: {model.get_num_parameters():,}")
         return model
 
-    def _setup_optimizer(self) -> AdamW:
+    def _setup_optimizer(self) -> AdamW | SGD:
         """Setup and return the optimizer."""
-        return AdamW(
-            self.model.parameters(),
-            lr=self.config.learning_rate,
-            weight_decay=self.config.weight_decay,
-        )
+        if self.config.optimizer == "sgd":
+            optimizer = SGD(
+                self.model.parameters(),
+                lr=self.config.learning_rate,
+                weight_decay=self.config.weight_decay,
+            )
+        else:
+            optimizer = AdamW(
+                self.model.parameters(),
+                lr=self.config.learning_rate,
+                weight_decay=self.config.weight_decay,
+            )
+        return optimizer
 
     def _setup_scheduler(self) -> LRScheduler | None:
         """Setup and return the learning rate scheduler."""
