@@ -23,7 +23,7 @@ import torch
 from PIL import Image
 from torchvision import transforms
 
-from dataloader.data_utils import CLASSES_DICT
+from dataloader.data_utils import CLASSES_DICT, LABEL_COLUMN_NAME
 from utils.logger import configure_logging
 
 configure_logging()
@@ -84,9 +84,9 @@ def load_image_paths_and_labels(dataset_path: Path) -> tuple[list[Path], list[in
     data = pd.read_csv(dataset_path / "annotations.csv")
     LOGGER.info(f"Loading {len(data)} image_paths from {dataset_path}...")
 
-    for row in data.itertuples(index=False):
-        label = row[3]
-        image_path = dataset_path / "images" / f"{row[0]}"
+    for _, row in data.iterrows():
+        label = row[LABEL_COLUMN_NAME]
+        image_path = dataset_path / "images" / f"{row['Image name']}"
 
         if image_path.exists():
             image_paths.append(image_path)

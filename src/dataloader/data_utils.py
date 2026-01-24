@@ -11,8 +11,18 @@ scattered across the codebase and makes it easy to update label ordering.
 
 from collections import OrderedDict
 
-CLASSES = ["No_DR", "Mild_Moderate_NPDR", "Clinically_Significant_Macular_Edema", "Severe_PDR"]
-# CLASSES = ["0", "1", "2", "3", "4"]
-# CLASSES = ["0", "1", "2"]
+RETINOPATHY_GRADES = ["0", "1", "2", "3", "4"]
+RISK_OF_MACULAR_EDEMA = ["0", "1", "2"]
+DIAGNOSTIC_CLASSES = ["No_DR", "Mild_Moderate_NPDR", "Clinically_Significant_Macular_Edema", "Severe_PDR"]
 
+ANNOTATIONS_COLUMN_INDEX_MAP = {
+    "Retinopathy grade": RETINOPATHY_GRADES,
+    "Risk of macular edema": RISK_OF_MACULAR_EDEMA,
+    "class": DIAGNOSTIC_CLASSES,
+}
+
+# Change column name to change the label column
+LABEL_COLUMN_NAME = "Risk of macular edema"
+
+CLASSES = ANNOTATIONS_COLUMN_INDEX_MAP[LABEL_COLUMN_NAME]
 CLASSES_DICT = OrderedDict(zip(CLASSES, range(len(CLASSES))))
