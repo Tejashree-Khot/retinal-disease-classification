@@ -13,6 +13,6 @@ from collections import OrderedDict
 
 CLASSES = ["No_DR", "Mild_Moderate_NPDR", "Clinically_Significant_Macular_Edema", "Severe_PDR"]
 # CLASSES = ["0", "1", "2"]
-CLASSES = ["0", "1", "2", "3", "4"]
+CLASSES = ["0", "1", "2"]
 
 CLASSES_DICT = OrderedDict(zip(CLASSES, range(len(CLASSES))))

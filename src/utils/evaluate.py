@@ -2,6 +2,7 @@
 
 import logging
 
+import pandas as pd
 import torch
 import torch.nn as nn
 from sklearn.metrics import accuracy_score, cohen_kappa_score, f1_score, precision_score, recall_score
@@ -38,7 +39,6 @@ def evaluate_model(
 
             current_f1 = f1_score(all_labels, all_preds, average="macro", zero_division=0)
             pbar.set_postfix({"loss": f"{loss.item():.4f}", "f1": f"{current_f1:.4f}"})
-
     metrics = {
         f"{data_type}_loss": total_loss / len(dataloader),
         f"{data_type}_accuracy": accuracy_score(all_labels, all_preds),
@@ -47,5 +47,9 @@ def evaluate_model(
         f"{data_type}_recall": recall_score(all_labels, all_preds, average="macro", zero_division=0),
         f"{data_type}_qwk": cohen_kappa_score(all_labels, all_preds, weights="quadratic"),
     }
+
+    if data_type == "test":
+        df = pd.DataFrame({"predictions": all_preds, "labels": all_labels})
+        df.to_csv("test_predictions.csv", index=False)
 
     return metrics
