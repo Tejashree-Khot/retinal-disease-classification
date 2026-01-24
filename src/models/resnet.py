@@ -28,12 +28,11 @@ class ResNetModel(BaseModel):
     Supports ResNet-18, 34, 50, 101, and 152 with ImageNet pretrained weights.
     """
 
-    def __init__(self, num_classes: int, pretrained: bool = True, variant: str = "18"):
+    def __init__(self, num_classes: int, variant: str, pretrained: bool = True):
         """Initialize ResNet model."""
         if variant.lower() not in RESNET_VARIANTS:
             raise ValueError(f"Unsupported variant: {variant}. Choose from: {list(RESNET_VARIANTS.keys())}")
-        self.variant = variant.lower()
-        super().__init__(num_classes, pretrained)
+        super().__init__(num_classes, variant.lower(), pretrained)
 
     def build_model(self) -> nn.Module:
         """Build ResNet model with custom classifier."""
@@ -64,3 +63,8 @@ class ResNetModel(BaseModel):
     def get_feature_layer(self) -> nn.Module:
         """Get the last convolutional layer for feature extraction."""
         return self.model.layer4[-1]
+
+    def get_selected_conv_layers_in_order(self) -> list[nn.Module]:
+        """Get all convolutional layers in the model in forward order."""
+        conv_layers = self.model.layer1, self.model.layer2, self.model.layer3, self.model.layer4
+        return conv_layers

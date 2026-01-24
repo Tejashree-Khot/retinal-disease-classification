@@ -41,7 +41,10 @@ class Trainer:
     def _setup_model(self) -> nn.Module:
         """Setup and return the model."""
         model = create_model(
-            self.config.model_name, num_classes=self.config.num_classes, pretrained=self.config.pretrained
+            self.config.model_name,
+            variant=self.config.variant,
+            num_classes=self.config.num_classes,
+            pretrained=self.config.pretrained,
         )
         model.to(self.device)
         LOGGER.info(f"Model: {self.config.model_name}, Parameters: {model.get_num_parameters():,}")

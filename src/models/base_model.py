@@ -14,10 +14,11 @@ class BaseModel(nn.Module, ABC):
     implement the required abstract methods.
     """
 
-    def __init__(self, num_classes: int, pretrained: bool = True):
+    def __init__(self, num_classes: int, variant: str, pretrained: bool = True):
         """Initialize base model."""
         super().__init__()
         self.num_classes = num_classes
+        self.variant = variant
         self.pretrained = pretrained
         self.model = self.build_model()
 

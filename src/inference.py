@@ -57,7 +57,7 @@ def main() -> None:
     device = get_device("auto")
     LOGGER.info(f"Using device: {device}")
 
-    model = create_model(model_name, num_classes=len(CLASSES), pretrained=False)
+    model = create_model(model_name, variant, num_classes=len(CLASSES), pretrained=False)
     model = CheckpointManager.load_for_inference(model, checkpoint_path, device=device)
     LOGGER.info(f"Loaded model from {checkpoint_path}")
 

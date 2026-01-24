@@ -210,11 +210,12 @@ def get_weight_statistics(model: BaseModel, layer_types: tuple[type, ...] = (nn.
 
 if __name__ == "__main__":
     model_name = "convnext"
+    variant = "large"
 
     checkpoint_path = Path(__file__).parent.parent.parent / "output" / "checkpoints" / f"{model_name}_best_model.pt"
     output_dir = Path(__file__).parent.parent.parent / "output" / "weights"
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    model = create_model(name=model_name, num_classes=len(CLASSES), pretrained=False)
+    model = create_model(name=model_name, variant=variant, num_classes=len(CLASSES), pretrained=False)
     model.load_state_dict(torch.load(checkpoint_path, map_location="cpu", weights_only=True), strict=False)
     visualize_weights(model, save_path=str(output_dir / f"{model_name}_weights.png"), show=False)

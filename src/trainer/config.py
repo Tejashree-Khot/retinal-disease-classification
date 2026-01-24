@@ -11,6 +11,7 @@ class TrainerConfig:
     """Configuration for model training."""
 
     model_name: str
+    variant: str
     train_path: Path
     val_path: Path
     num_classes: int = len(CLASSES)

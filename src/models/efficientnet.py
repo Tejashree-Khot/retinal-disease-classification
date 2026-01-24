@@ -46,12 +46,11 @@ class EfficientNetModel(BaseModel):
     Supports variants B0 through B7 with ImageNet pretrained weights.
     """
 
-    def __init__(self, num_classes: int, pretrained: bool = True, variant: str = "b7"):
+    def __init__(self, num_classes: int, variant: str, pretrained: bool = True):
         """Initialize EfficientNet model."""
         if variant.lower() not in EFFICIENTNET_VARIANTS:
             raise ValueError(f"Unsupported variant: {variant}. Choose from: {list(EFFICIENTNET_VARIANTS.keys())}")
-        self.variant = variant.lower()
-        super().__init__(num_classes, pretrained)
+        super().__init__(num_classes, variant.lower(), pretrained)
 
     def build_model(self) -> nn.Module:
         """Build EfficientNet model with custom classifier."""
@@ -82,3 +81,15 @@ class EfficientNetModel(BaseModel):
     def get_feature_layer(self) -> nn.Module:
         """Get the last convolutional layer for feature extraction."""
         return self.model.features[-1]
+
+    def get_selected_conv_layers_in_order(self) -> list[nn.Module]:
+        """Get all convolutional layers in the model in forward order."""
+        layers = []
+        block = []
+        for layer in self.model.features:
+            if isinstance(layer, nn.Conv2d):
+                block.append(layer)
+            elif isinstance(layer, nn.MaxPool2d) and block:
+                layers.append(block[-1])
+                block = []
+        return layers

@@ -52,6 +52,7 @@ def visualize_embeddings(
     data_dir: Path,
     model: BaseModel | None = None,
     model_name: str = "resnet",
+    variant: str = "18",
     model_path: str | None = None,
     num_classes: int = 4,
     max_images: int = 100,
@@ -66,7 +67,7 @@ def visualize_embeddings(
 ) -> tuple[np.ndarray, np.ndarray]:
     """Extract embeddings from any BaseModel and visualize with t-SNE or UMAP."""
     if model is None:
-        model = create_model(model_name, num_classes=num_classes, **model_kwargs)
+        model = create_model(model_name, variant, num_classes=num_classes, **model_kwargs)
         if model_path:
             model.load_state_dict(torch.load(model_path, map_location=device, weights_only=True))
     model.to(device).eval()
@@ -128,7 +129,7 @@ if __name__ == "__main__":
     data_dir = Path("../data/IDRiD/Train")
     output_dir = Path("../output/embeddings")
 
-    for model_name in ["resnet", "vgg", "efficientnet", "convnext"]:
+    for model_name, variant in [("resnet", "18"), ("vgg", "16"), ("efficientnet", "b7"), ("convnext", "large")]:
         visualize_embeddings(
             data_dir=data_dir, show=False, save_path=output_dir / f"embeddings_{model_name}.png", model_name=model_name
         )

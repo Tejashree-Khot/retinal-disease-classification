@@ -29,12 +29,11 @@ class ConvNeXtModel(BaseModel):
     Supports Tiny, Small, Base, and Large variants with ImageNet pretrained weights.
     """
 
-    def __init__(self, num_classes: int, pretrained: bool = True, variant: str = "large"):
+    def __init__(self, num_classes: int, variant: str, pretrained: bool = True):
         """Initialize ConvNeXt model."""
         if variant.lower() not in CONVNEXT_VARIANTS:
             raise ValueError(f"Unsupported variant: {variant}. Choose from: {list(CONVNEXT_VARIANTS.keys())}")
-        self.variant = variant.lower()
-        super().__init__(num_classes, pretrained)
+        super().__init__(num_classes, variant.lower(), pretrained)
 
     def build_model(self) -> nn.Module:
         """Build ConvNeXt model with custom classifier."""
@@ -66,3 +65,14 @@ class ConvNeXtModel(BaseModel):
     def get_feature_layer(self) -> nn.Module:
         """Get the last convolutional layer of the last block for feature extraction."""
         return self.model.features[-1][-1].block[0]
+
+    def get_selected_conv_layers_in_order(self) -> list[nn.Module]:
+        """Get all convolutional layers in the model in forward order."""
+        layers = [
+            self.model.features[0],
+            self.model.features[1][-1].block[0],
+            self.model.features[3][-1].block[0],
+            self.model.features[5][-1].block[0],
+            self.model.features[7][-1].block[0],
+        ]
+        return layers

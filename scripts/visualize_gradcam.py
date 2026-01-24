@@ -106,6 +106,7 @@ class GradCAMVisualizer:
 
 if __name__ == "__main__":
     model_name = "convnext"
+    variant = "large"
 
     root = Path(__file__).parent.parent.parent
     image_dir = root / "data" / "IDRiD" / "Train" / "images"
@@ -114,7 +115,7 @@ if __name__ == "__main__":
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    model = create_model(model_name, num_classes=len(CLASSES), pretrained=False)
+    model = create_model(model_name, variant, num_classes=len(CLASSES), pretrained=False)
     model.load_state_dict(torch.load(checkpoint_path, map_location="cpu"), strict=False)
 
     image_paths = list(image_dir.glob("*.jpg"))[:8]

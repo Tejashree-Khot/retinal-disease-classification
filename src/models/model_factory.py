@@ -25,7 +25,7 @@ class ModelFactory:
     """
 
     @staticmethod
-    def create_model(name: str, num_classes: int, pretrained: bool = True, **kwargs: Any) -> BaseModel:
+    def create_model(name: str, variant: str, num_classes: int, pretrained: bool = True, **kwargs: Any) -> BaseModel:
         """Create a model instance by name."""
         name_lower = name.lower()
         if name_lower not in MODEL_REGISTRY:
@@ -33,7 +33,7 @@ class ModelFactory:
             raise ValueError(f"Unknown model: {name}. Available models: {available}")
 
         model_class = MODEL_REGISTRY[name_lower]
-        return model_class(num_classes=num_classes, pretrained=pretrained, **kwargs)
+        return model_class(num_classes=num_classes, variant=variant, pretrained=pretrained, **kwargs)
 
     @staticmethod
     def get_available_models() -> list[str]:
@@ -48,9 +48,9 @@ class ModelFactory:
         MODEL_REGISTRY[name.lower()] = model_class
 
 
-def create_model(name: str, num_classes: int, pretrained: bool = True, **kwargs: Any) -> BaseModel:
+def create_model(name: str, variant: str, num_classes: int, pretrained: bool = True, **kwargs: Any) -> BaseModel:
     """Convenience function to create a model."""
-    return ModelFactory.create_model(name, num_classes, pretrained, **kwargs)
+    return ModelFactory.create_model(name, variant, num_classes, pretrained, **kwargs)
 
 
 def get_available_models() -> list[str]:

@@ -23,12 +23,11 @@ class VGGModel(BaseModel):
     and ImageNet pretrained weights.
     """
 
-    def __init__(self, num_classes: int, pretrained: bool = True, variant: str = "16"):
+    def __init__(self, num_classes: int, variant: str, pretrained: bool = True):
         """Initialize VGG model."""
         if variant.lower() not in VGG_VARIANTS:
             raise ValueError(f"Unsupported variant: {variant}. Choose from: {list(VGG_VARIANTS.keys())}")
-        self.variant = variant.lower()
-        super().__init__(num_classes, pretrained)
+        super().__init__(num_classes, variant.lower(), pretrained)
 
     def build_model(self) -> nn.Module:
         """Build VGG model with custom classifier."""
@@ -59,3 +58,15 @@ class VGGModel(BaseModel):
     def get_feature_layer(self) -> nn.Module:
         """Get the last convolutional layer for feature extraction."""
         return self.model.features[-1]
+
+    def get_selected_conv_layers_in_order(self) -> list[nn.Module]:
+        """Get all convolutional layers in the model in forward order."""
+        layers = []
+        last_relu = None
+        for layer in self.model.features:
+            if isinstance(layer, nn.ReLU):
+                last_relu = layer
+            elif isinstance(layer, nn.MaxPool2d) and last_relu is not None:
+                layers.append(last_relu)
+                last_relu = None
+        return layers

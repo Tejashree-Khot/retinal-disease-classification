@@ -1,5 +1,6 @@
 """Feature map visualization and layer evolution animation for CNN models."""
 
+import argparse
 import logging
 import random
 import shutil
@@ -31,6 +32,7 @@ class FeatureMapVisualizer:
         self.base_model = model
         self.model = model.model.to(device).eval()
         self.device = device
+        self.conv_layers = model.get_selected_conv_layers_in_order()
 
     def _register_hook(self, layer: nn.Module):
         activations = {}
@@ -93,7 +95,7 @@ class LayerEvolutionAnimator:
         self.base_model = model
         self.model = model.model.to(device).eval()
         self.device = device
-        self.conv_layers = model.get_all_conv_layers_in_order()
+        self.conv_layers = model.get_selected_conv_layers_in_order()
 
     def animate(self, image_path: Path, save_path: Path | None = None, interval: int = 800, show: bool = True):
         """Create layer-wise evolution animation."""
@@ -137,9 +139,20 @@ class LayerEvolutionAnimator:
         plt.close(fig)
 
 
+def make_argparser():
+    parser = argparse.ArgumentParser(description="Visualize feature maps and layer evolution of a CNN model.")
+    parser.add_argument(
+        "--model_name", type=str, default="resnet", choices=["resnet", "vgg", "efficientnet", "convnext"]
+    )
+    parser.add_argument("--variant", type=str, default="18", choices=["18", "16", "b7", "large"])
+    return parser.parse_args()
+
+
 if __name__ == "__main__":
-    model_name = "resnet"  # vgg, resnet, efficientnet, convnext
-    variant = "18"
+    args = make_argparser()
+
+    model_name = args.model_name
+    variant = args.variant
 
     root = Path(__file__).parent.parent
     image_dir = root / "data" / "IDRiD" / "Train" / "images"
@@ -149,19 +162,19 @@ if __name__ == "__main__":
     output_dir.mkdir(parents=True, exist_ok=True)
     image_path = Path(random.choice(list(image_dir.rglob("*.jpg"))))
 
-    LOGGER.info(f"Visualizing feature maps for {image_path}")
+    LOGGER.info(f"Visualizing feature maps for {image_path.name}")
 
     shutil.copy(image_path, output_dir / f"{model_name}_{variant}_input_image.jpg")
 
-    model = create_model(model_name, num_classes=len(CLASSES), pretrained=False, variant=variant)
+    model = create_model(model_name, variant, num_classes=len(CLASSES), pretrained=False)
     if not checkpoint_path.exists():
         raise FileNotFoundError(f"Checkpoint file not found: {checkpoint_path}")
     model.load_state_dict(torch.load(checkpoint_path, map_location="cpu"), strict=False)
 
     visualizer = FeatureMapVisualizer(model, device="cpu")
-    for idx, layer in enumerate(model.get_selected_conv_layers_in_order()):
+    for idx, layer in enumerate(visualizer.conv_layers):
         visualizer.visualize(
-            image_path, layer, save_path=output_dir / f"{model_name}_feature_map_{idx}.png", show=False
+            image_path, layer, save_path=output_dir / f"{model_name}_{variant}_feature_map_{idx}.png", show=False
         )
 
     animator = LayerEvolutionAnimator(model, device="cpu")

@@ -25,7 +25,7 @@ def main() -> None:
     checkpoint_path = root / "output" / "checkpoints" / f"{model_name}_{variant}_best_model.pt"
     test_path = root / "data" / "IDRiD" / "Test"
 
-    model = create_model(model_name, num_classes=len(CLASSES), pretrained=False)
+    model = create_model(model_name, variant, num_classes=len(CLASSES), pretrained=False)
     model = CheckpointManager.load_for_inference(model, checkpoint_path, device=get_device("auto"))
     LOGGER.info(f"Loaded model from {checkpoint_path}")
 
