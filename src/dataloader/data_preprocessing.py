@@ -52,14 +52,7 @@ def get_image_transforms(size: tuple[int], data_type: str) -> Callable:
             ]
         )
     else:
-        return transforms.Compose(
-            [
-                transforms.Resize(int(size[0] * 1.1)),
-                transforms.CenterCrop(size),
-                transforms.ToTensor(),
-                transforms.Normalize(mean, std),
-            ]
-        )
+        return transforms.Compose([transforms.Resize(size), transforms.ToTensor(), transforms.Normalize(mean, std)])
 
 
 def load_image(image_path: Path, transform: Callable) -> torch.Tensor:
