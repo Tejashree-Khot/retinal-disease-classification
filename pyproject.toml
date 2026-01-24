@@ -1,9 +1,9 @@
 [project]
-name = "RetinalDiseaseClassifier"
+name = "retinal-disease-classifier"
 version = "1.0.0"
 description = "Retinal Disease Classification"
 readme = "README.md"
-requires-python = "==3.13.9"
+requires-python = ">=3.13"
 
 [tool.uv.workspace]
 members = [
@@ -60,7 +60,7 @@ indent-style = "space"
 
 [tool.ruff]
 target-version = "py313"
-line-length = 100
+line-length = 120
 exclude = []
 src = ["src"]
 

@@ -2,7 +2,7 @@
 name = "retinal-disease-classification"
 version = "0.1.0"
 description = "Retinal disease classification Trainer"
-requires-python = "==3.13.9"
+requires-python = ">=3.13"
 dependencies = [
     "datasets",
     "focal_loss_torch",
