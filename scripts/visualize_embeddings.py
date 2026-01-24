@@ -1,6 +1,7 @@
 """Embedding visualization utilities for CNN models."""
 
 import os
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -9,6 +10,8 @@ import torch.nn as nn
 from matplotlib import pyplot as plt
 from sklearn.manifold import TSNE
 from torch import Tensor
+
+sys.path.append(str(Path(__file__).parent.parent / "src"))
 
 from dataloader.data_loader import CustomDataset, get_data_loader
 from dataloader.data_utils import CLASSES

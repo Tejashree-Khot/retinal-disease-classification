@@ -1,6 +1,7 @@
 """Weight distribution visualization for CNN models."""
 
 import os
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -9,6 +10,7 @@ import torch
 import torch.nn as nn
 from matplotlib import pyplot as plt
 
+sys.path.append(str(Path(__file__).parent.parent / "src"))
 from dataloader.data_utils import CLASSES
 from models.base_model import BaseModel
 from models.model_factory import create_model
