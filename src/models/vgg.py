@@ -9,10 +9,10 @@ from models.base_model import BaseModel
 # Mapping of variant names to model functions and weights
 # Using batch normalization variants for better training stability
 VGG_VARIANTS = {
-    "vgg11": (models.vgg11_bn, VGG11_BN_Weights.IMAGENET1K_V1),
-    "vgg13": (models.vgg13_bn, VGG13_BN_Weights.IMAGENET1K_V1),
-    "vgg16": (models.vgg16_bn, VGG16_BN_Weights.IMAGENET1K_V1),
-    "vgg19": (models.vgg19_bn, VGG19_BN_Weights.IMAGENET1K_V1),
+    "11": (models.vgg11_bn, VGG11_BN_Weights.IMAGENET1K_V1),
+    "13": (models.vgg13_bn, VGG13_BN_Weights.IMAGENET1K_V1),
+    "16": (models.vgg16_bn, VGG16_BN_Weights.IMAGENET1K_V1),
+    "19": (models.vgg19_bn, VGG19_BN_Weights.IMAGENET1K_V1),
 }
 
 
@@ -23,7 +23,7 @@ class VGGModel(BaseModel):
     and ImageNet pretrained weights.
     """
 
-    def __init__(self, num_classes: int, pretrained: bool = True, variant: str = "vgg16"):
+    def __init__(self, num_classes: int, pretrained: bool = True, variant: str = "16"):
         """Initialize VGG model."""
         if variant.lower() not in VGG_VARIANTS:
             raise ValueError(f"Unsupported variant: {variant}. Choose from: {list(VGG_VARIANTS.keys())}")

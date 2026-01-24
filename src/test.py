@@ -19,9 +19,10 @@ LOGGER = logging.getLogger("test")
 
 def main() -> None:
     """Run model evaluation on test dataset."""
-    model_name = "resnet"
+    model_name = "convnext"
+    variant = "large"
     root = Path(__file__).parent.parent
-    checkpoint_path = root / "output" / "checkpoints" / f"{model_name}18_best_model.pt"
+    checkpoint_path = root / "output" / "checkpoints" / f"{model_name}_{variant}_best_model.pt"
     test_path = root / "data" / "IDRiD" / "Test"
 
     model = create_model(model_name, num_classes=len(CLASSES), pretrained=False)

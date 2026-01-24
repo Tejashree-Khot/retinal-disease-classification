@@ -32,7 +32,7 @@ def main() -> None:
     """Run training with specified configuration."""
 
     config = TrainerConfig(
-        model_name="resnet",
+        model_name="convnext",
         train_path=Path(__file__).parent.parent / "data" / "IDRiD" / "Train",
         val_path=Path(__file__).parent.parent / "data" / "IDRiD" / "Test",
     )

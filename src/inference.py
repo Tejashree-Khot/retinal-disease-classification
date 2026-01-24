@@ -50,7 +50,8 @@ def predict_images(
 def main() -> None:
     """Run inference on images."""
     model_name = "convnext"
-    checkpoint_path = Path(__file__).parent.parent / "output" / "checkpoints" / f"{model_name}large_best_model.pt"
+    variant = "large"
+    checkpoint_path = Path(__file__).parent.parent / "output" / "checkpoints" / f"{model_name}_{variant}_best_model.pt"
     image_dir = Path(__file__).parent.parent / "data" / "IDRiD" / "Test" / "images"
 
     device = get_device("auto")
@@ -60,7 +61,7 @@ def main() -> None:
     model = CheckpointManager.load_for_inference(model, checkpoint_path, device=device)
     LOGGER.info(f"Loaded model from {checkpoint_path}")
 
-    image_paths = list(image_dir.glob("*.jpg"))
+    image_paths = list(image_dir.glob("*.jpg"))[:10]
     results = predict_images(model, image_paths, model.get_input_size(), device)
     LOGGER.info(f"\nPredictions for {len(results)} images:")
     for img_path, class_idx, class_name, confidence in results:

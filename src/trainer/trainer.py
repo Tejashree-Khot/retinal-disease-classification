@@ -86,7 +86,7 @@ class Trainer:
         """Save model checkpoint."""
         metrics["epoch"] = epoch
         suffix = "best_model.pt" if is_best else f"checkpoint_epoch_{epoch}.pt"
-        path = self.config.checkpoint_dir / f"{self.model.variant}_{suffix}"
+        path = self.config.checkpoint_dir / f"{self.config.model_name}_{self.model.variant}_{suffix}"
 
         CheckpointManager.save_checkpoint(
             model=self.model, optimizer=self.optimizer, epoch=epoch, metrics=metrics, path=path

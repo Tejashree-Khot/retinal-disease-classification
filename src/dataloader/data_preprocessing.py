@@ -85,7 +85,7 @@ def load_image_paths_and_labels(dataset_path: Path) -> tuple[list[Path], list[in
     LOGGER.info(f"Loading {len(data)} image_paths from {dataset_path}...")
 
     for row in data.itertuples(index=False):
-        label = row[2]
+        label = row[3]
         image_path = dataset_path / "images" / f"{row[0]}"
 
         if image_path.exists():

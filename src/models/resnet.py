@@ -14,11 +14,11 @@ from models.base_model import BaseModel
 
 # Mapping of variant names to model functions and weights
 RESNET_VARIANTS = {
-    "resnet18": (models.resnet18, ResNet18_Weights.IMAGENET1K_V1),
-    "resnet34": (models.resnet34, ResNet34_Weights.IMAGENET1K_V1),
-    "resnet50": (models.resnet50, ResNet50_Weights.IMAGENET1K_V2),
-    "resnet101": (models.resnet101, ResNet101_Weights.IMAGENET1K_V2),
-    "resnet152": (models.resnet152, ResNet152_Weights.IMAGENET1K_V2),
+    "18": (models.resnet18, ResNet18_Weights.IMAGENET1K_V1),
+    "34": (models.resnet34, ResNet34_Weights.IMAGENET1K_V1),
+    "50": (models.resnet50, ResNet50_Weights.IMAGENET1K_V2),
+    "101": (models.resnet101, ResNet101_Weights.IMAGENET1K_V2),
+    "152": (models.resnet152, ResNet152_Weights.IMAGENET1K_V2),
 }
 
 
@@ -28,7 +28,7 @@ class ResNetModel(BaseModel):
     Supports ResNet-18, 34, 50, 101, and 152 with ImageNet pretrained weights.
     """
 
-    def __init__(self, num_classes: int, pretrained: bool = True, variant: str = "resnet18"):
+    def __init__(self, num_classes: int, pretrained: bool = True, variant: str = "18"):
         """Initialize ResNet model."""
         if variant.lower() not in RESNET_VARIANTS:
             raise ValueError(f"Unsupported variant: {variant}. Choose from: {list(RESNET_VARIANTS.keys())}")
