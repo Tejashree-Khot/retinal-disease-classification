@@ -36,9 +36,7 @@ class LayerEvolutionAnimator:
         if hasattr(self.model, "features"):  # ConvNeXt / EfficientNet
             layers.extend(self.model.features)
         elif hasattr(self.model, "layer1"):  # ResNet
-            layers.extend(
-                [self.model.layer1, self.model.layer2, self.model.layer3, self.model.layer4]
-            )
+            layers.extend([self.model.layer1, self.model.layer2, self.model.layer3, self.model.layer4])
         else:
             raise ValueError("Unsupported model architecture")
 

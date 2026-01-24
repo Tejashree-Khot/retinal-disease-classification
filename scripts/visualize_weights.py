@@ -22,9 +22,7 @@ class WeightsVisualizer:
     def __init__(self, model: BaseModel):
         self.model = model
 
-    def get_weight_statistics(
-        self, layer_types: tuple[type, ...] = (nn.Conv2d, nn.Linear)
-    ) -> pd.DataFrame:
+    def get_weight_statistics(self, layer_types: tuple[type, ...] = (nn.Conv2d, nn.Linear)) -> pd.DataFrame:
         """Get summary statistics for all layers of specified types."""
         stats = []
         for name, module in self.model.named_modules():
@@ -85,9 +83,7 @@ class WeightsVisualizer:
             ax.tick_params(labelsize=7)
 
             mean_val = np.mean(weights)
-            ax.axvline(
-                mean_val, color="red", linestyle="--", linewidth=1, label=f"μ={mean_val:.3f}"
-            )
+            ax.axvline(mean_val, color="red", linestyle="--", linewidth=1, label=f"μ={mean_val:.3f}")
             ax.legend(fontsize=7)
 
         for j in range(i + 1, len(axes)):
@@ -206,9 +202,7 @@ def visualize_weights(
     )
 
 
-def get_weight_statistics(
-    model: BaseModel, layer_types: tuple[type, ...] = (nn.Conv2d, nn.Linear)
-) -> pd.DataFrame:
+def get_weight_statistics(model: BaseModel, layer_types: tuple[type, ...] = (nn.Conv2d, nn.Linear)) -> pd.DataFrame:
     """Convenience function to get weight statistics."""
     visualizer = WeightsVisualizer(model)
     return visualizer.get_weight_statistics(layer_types=layer_types)
@@ -217,17 +211,10 @@ def get_weight_statistics(
 if __name__ == "__main__":
     model_name = "convnext"
 
-    checkpoint_path = (
-        Path(__file__).parent.parent.parent
-        / "output"
-        / "checkpoints"
-        / f"{model_name}_best_model.pt"
-    )
+    checkpoint_path = Path(__file__).parent.parent.parent / "output" / "checkpoints" / f"{model_name}_best_model.pt"
     output_dir = Path(__file__).parent.parent.parent / "output" / "weights"
     output_dir.mkdir(parents=True, exist_ok=True)
 
     model = create_model(name=model_name, num_classes=len(CLASSES), pretrained=False)
-    model.load_state_dict(
-        torch.load(checkpoint_path, map_location="cpu", weights_only=True), strict=False
-    )
+    model.load_state_dict(torch.load(checkpoint_path, map_location="cpu", weights_only=True), strict=False)
     visualize_weights(model, save_path=str(output_dir / f"{model_name}_weights.png"), show=False)

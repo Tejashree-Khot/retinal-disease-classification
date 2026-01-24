@@ -2,12 +2,7 @@
 
 import torch.nn as nn
 from torchvision import models
-from torchvision.models import (
-    VGG11_BN_Weights,
-    VGG13_BN_Weights,
-    VGG16_BN_Weights,
-    VGG19_BN_Weights,
-)
+from torchvision.models import VGG11_BN_Weights, VGG13_BN_Weights, VGG16_BN_Weights, VGG19_BN_Weights
 
 from models.base_model import BaseModel
 
@@ -31,9 +26,7 @@ class VGGModel(BaseModel):
     def __init__(self, num_classes: int, pretrained: bool = True, variant: str = "vgg16"):
         """Initialize VGG model."""
         if variant.lower() not in VGG_VARIANTS:
-            raise ValueError(
-                f"Unsupported variant: {variant}. Choose from: {list(VGG_VARIANTS.keys())}"
-            )
+            raise ValueError(f"Unsupported variant: {variant}. Choose from: {list(VGG_VARIANTS.keys())}")
         self.variant = variant.lower()
         super().__init__(num_classes, pretrained)
 

@@ -28,12 +28,10 @@ class ResNetModel(BaseModel):
     Supports ResNet-18, 34, 50, 101, and 152 with ImageNet pretrained weights.
     """
 
-    def __init__(self, num_classes: int, pretrained: bool = True, variant: str = "resnet50"):
+    def __init__(self, num_classes: int, pretrained: bool = True, variant: str = "resnet18"):
         """Initialize ResNet model."""
         if variant.lower() not in RESNET_VARIANTS:
-            raise ValueError(
-                f"Unsupported variant: {variant}. Choose from: {list(RESNET_VARIANTS.keys())}"
-            )
+            raise ValueError(f"Unsupported variant: {variant}. Choose from: {list(RESNET_VARIANTS.keys())}")
         self.variant = variant.lower()
         super().__init__(num_classes, pretrained)
 

@@ -7,11 +7,7 @@ import torch
 from torch import Tensor
 from torch.utils.data import DataLoader, Dataset, WeightedRandomSampler
 
-from dataloader.data_preprocessing import (
-    get_image_transforms,
-    load_image,
-    load_image_paths_and_labels,
-)
+from dataloader.data_preprocessing import get_image_transforms, load_image, load_image_paths_and_labels
 from dataloader.data_utils import CLASSES_DICT
 
 
@@ -36,15 +32,11 @@ def get_sampler(labels: list[int]) -> WeightedRandomSampler:
     class_sample_count = np.bincount(labels, minlength=len(CLASSES_DICT))
     class_weights = 1.0 / np.clip(class_sample_count, 1, None)
     sample_weights = [class_weights[label] for label in labels]
-    sampler = WeightedRandomSampler(
-        sample_weights, num_samples=len(sample_weights), replacement=True
-    )
+    sampler = WeightedRandomSampler(sample_weights, num_samples=len(sample_weights), replacement=True)
     return sampler
 
 
-def get_data_loader(
-    dataset: CustomDataset, batch_size: int, use_weighted_sampler: bool = False
-) -> DataLoader:
+def get_data_loader(dataset: CustomDataset, batch_size: int, use_weighted_sampler: bool = False) -> DataLoader:
     """Get data loader (image + label)."""
     sampler = None
     if use_weighted_sampler:

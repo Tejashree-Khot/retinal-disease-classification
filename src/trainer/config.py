@@ -21,7 +21,6 @@ class TrainerConfig:
     scheduler: str = "cosine"
     early_stopping_patience: int = 10
     checkpoint_dir: Path = Path(__file__).parent.parent.parent / "output" / "checkpoints"
-    use_wandb: bool = True
     wandb_dir: Path = Path(__file__).parent.parent.parent / "output"
     wandb_project: str = "retinal-classification"
     device: str = "auto"
@@ -30,3 +29,4 @@ class TrainerConfig:
     unfreeze_all: bool = True
     unfreeze_epoch: int = 0
     optimizer: str = "adam"
+    resume_checkpoint_path: Path | None = None

@@ -32,9 +32,7 @@ class ConvNeXtModel(BaseModel):
     def __init__(self, num_classes: int, pretrained: bool = True, variant: str = "large"):
         """Initialize ConvNeXt model."""
         if variant.lower() not in CONVNEXT_VARIANTS:
-            raise ValueError(
-                f"Unsupported variant: {variant}. Choose from: {list(CONVNEXT_VARIANTS.keys())}"
-            )
+            raise ValueError(f"Unsupported variant: {variant}. Choose from: {list(CONVNEXT_VARIANTS.keys())}")
         self.variant = variant.lower()
         super().__init__(num_classes, pretrained)
 

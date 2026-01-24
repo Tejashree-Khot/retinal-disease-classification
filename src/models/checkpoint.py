@@ -16,11 +16,7 @@ class CheckpointManager:
 
     @staticmethod
     def save_checkpoint(
-        model: nn.Module,
-        optimizer: Optimizer | None,
-        epoch: int,
-        metrics: dict[str, Any],
-        path: str | Path,
+        model: nn.Module, optimizer: Optimizer | None, epoch: int, metrics: dict[str, Any], path: str | Path
     ) -> None:
         """Save a training checkpoint."""
         path = Path(path)
@@ -36,10 +32,7 @@ class CheckpointManager:
 
     @staticmethod
     def load_checkpoint(
-        model: nn.Module,
-        path: str | Path,
-        device: str | torch.device = "cpu",
-        optimizer: Optimizer | None = None,
+        model: nn.Module, path: str | Path, device: str | torch.device = "cpu", optimizer: Optimizer | None = None
     ) -> tuple[nn.Module, int, dict[str, Any]]:
         """Load a checkpoint for resuming training."""
         path = Path(path)
@@ -66,9 +59,7 @@ class CheckpointManager:
         return model, epoch, metrics
 
     @staticmethod
-    def load_for_inference(
-        model: nn.Module, path: str | Path, device: str | torch.device = "cpu"
-    ) -> nn.Module:
+    def load_for_inference(model: nn.Module, path: str | Path, device: str | torch.device = "cpu") -> nn.Module:
         """Load model weights for inference only."""
         path = Path(path)
         if not path.exists():
@@ -112,9 +103,7 @@ class CheckpointManager:
             model_dict = model.state_dict()
             # Filter out mismatched keys
             pretrained_dict = {
-                k: v
-                for k, v in state_dict.items()
-                if k in model_dict and v.shape == model_dict[k].shape
+                k: v for k, v in state_dict.items() if k in model_dict and v.shape == model_dict[k].shape
             }
             skipped = set(state_dict.keys()) - set(pretrained_dict.keys())
             if skipped:

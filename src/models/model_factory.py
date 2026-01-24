@@ -25,9 +25,7 @@ class ModelFactory:
     """
 
     @staticmethod
-    def create_model(
-        name: str, num_classes: int, pretrained: bool = True, **kwargs: Any
-    ) -> BaseModel:
+    def create_model(name: str, num_classes: int, pretrained: bool = True, **kwargs: Any) -> BaseModel:
         """Create a model instance by name."""
         name_lower = name.lower()
         if name_lower not in MODEL_REGISTRY:

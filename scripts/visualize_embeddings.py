@@ -107,9 +107,7 @@ def visualize_embeddings(
         for label in sorted(set(labels_array)):
             idx = labels_array == label
             label_name = CLASSES[label] if label < len(CLASSES) else f"Class {label}"
-            plt.scatter(
-                embeddings_2d[idx, 0], embeddings_2d[idx, 1], label=label_name, alpha=0.7, s=50
-            )
+            plt.scatter(embeddings_2d[idx, 0], embeddings_2d[idx, 1], label=label_name, alpha=0.7, s=50)
         plt.legend(loc="best")
         plt.title(f"Embedding Visualization for {model_name}")
         plt.xlabel("Component 1")
@@ -132,8 +130,5 @@ if __name__ == "__main__":
 
     for model_name in ["resnet", "vgg", "efficientnet", "convnext"]:
         visualize_embeddings(
-            data_dir=data_dir,
-            show=False,
-            save_path=output_dir / f"embeddings_{model_name}.png",
-            model_name=model_name,
+            data_dir=data_dir, show=False, save_path=output_dir / f"embeddings_{model_name}.png", model_name=model_name
         )

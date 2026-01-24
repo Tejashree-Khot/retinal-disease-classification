@@ -24,10 +24,7 @@ class GradCAMVisualizer:
     """Grad-CAM visualization utility."""
 
     def __init__(
-        self,
-        model: BaseModel,
-        method: Literal["gradcam", "gradcam++", "scorecam"] = "gradcam",
-        device: str = "cpu",
+        self, model: BaseModel, method: Literal["gradcam", "gradcam++", "scorecam"] = "gradcam", device: str = "cpu"
     ):
         self.device = device
 

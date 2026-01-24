@@ -49,9 +49,7 @@ class EfficientNetModel(BaseModel):
     def __init__(self, num_classes: int, pretrained: bool = True, variant: str = "b7"):
         """Initialize EfficientNet model."""
         if variant.lower() not in EFFICIENTNET_VARIANTS:
-            raise ValueError(
-                f"Unsupported variant: {variant}. Choose from: {list(EFFICIENTNET_VARIANTS.keys())}"
-            )
+            raise ValueError(f"Unsupported variant: {variant}. Choose from: {list(EFFICIENTNET_VARIANTS.keys())}")
         self.variant = variant.lower()
         super().__init__(num_classes, pretrained)
 
@@ -68,9 +66,7 @@ class EfficientNetModel(BaseModel):
         in_features = model.classifier[1].in_features
 
         # Replace classifier with custom head
-        model.classifier = nn.Sequential(
-            nn.Dropout(p=0.5, inplace=True), nn.Linear(in_features, self.num_classes)
-        )
+        model.classifier = nn.Sequential(nn.Dropout(p=0.5, inplace=True), nn.Linear(in_features, self.num_classes))
 
         return model
 
