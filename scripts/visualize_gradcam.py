@@ -21,7 +21,9 @@ sys.path.append(str(Path(__file__).parent.parent / "src"))
 from dataloader.data_preprocessing import get_image_transforms, load_image
 from dataloader.data_utils import CLASSES, CLASSES_DICT
 from models.base_model import BaseModel
+from models.checkpoint import CheckpointManager
 from models.model_factory import create_model
+from utils.helper import get_device
 from utils.logger import configure_logging
 
 configure_logging()
@@ -118,6 +120,7 @@ def plot_classwise_gradcam(
     visualizer: GradCAMVisualizer,
     pred_col="predictions",
     save_path: Path | None = None,
+    show: bool = True,
 ):
     """Plot classwise Grad-CAM for a given dataframe of predictions."""
     image_paths = sorted(image_dir.glob("*.jpg"))
@@ -154,7 +157,8 @@ def plot_classwise_gradcam(
     if save_path:
         plt.savefig(save_path, bbox_inches="tight", dpi=80)
 
-    plt.show()
+    if show:
+        plt.show()
 
 
 def make_argparser():
@@ -185,8 +189,8 @@ def main(args: argparse.Namespace):
 
     checkpoint_path = root / "output" / "checkpoints" / f"{model_name}_{variant}_best_model.pt"
     model = create_model(model_name, variant, num_classes=len(CLASSES), pretrained=False)
-    model.load_state_dict(torch.load(checkpoint_path, map_location="cpu"), strict=False)
-    LOGGER.info(f"Loaded model from {checkpoint_path}")
+    model = CheckpointManager.load_for_inference(model, checkpoint_path, device=get_device("auto"))
+    LOGGER.info(f"Loaded model for visualization from {checkpoint_path}")
 
     visualizer = GradCAMVisualizer(model, device="cpu")
 
@@ -196,7 +200,11 @@ def main(args: argparse.Namespace):
     elif prediction_df is not None:
         LOGGER.info(f"Plotting classwise Grad-CAM for {args.prediction_csv.name}")
         plot_classwise_gradcam(
-            prediction_df, image_dir, visualizer, save_path=output_dir / f"{model_name}_{variant}_classwise_gradcam.png"
+            prediction_df,
+            image_dir,
+            visualizer,
+            save_path=output_dir / f"{model_name}_{variant}_classwise_gradcam.png",
+            show=False,
         )
 
 
