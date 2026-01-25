@@ -31,10 +31,16 @@ def setup_wandb(config: TrainerConfig) -> None:
 def main() -> None:
     """Run training with specified configuration."""
 
+    model_name = "convnext"
+    variant = "large"
+    root_dir = Path(__file__).parent.parent
+
     config = TrainerConfig(
-        model_name="convnext",
-        train_path=Path(__file__).parent.parent / "data" / "IDRiD" / "Train",
-        val_path=Path(__file__).parent.parent / "data" / "IDRiD" / "Test",
+        model_name=model_name,
+        variant=variant,
+        train_path=root_dir / "data" / "IDRiD" / "Train",
+        val_path=root_dir / "data" / "IDRiD" / "Test",
+        resume_checkpoint_path=root_dir / "output" / "checkpoints" / f"{model_name}_{variant}_best_model.pt",
     )
     setup_wandb(config)
     trainer = Trainer(config)

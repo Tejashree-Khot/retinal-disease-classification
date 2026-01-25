@@ -29,11 +29,11 @@ def log_metrics(metrics: dict, splits: tuple[str, str] = ("train", "val")) -> No
     def row(split: str):
         return [
             split.capitalize(),
-            f"{metrics[f'{split}_loss']:.4f}",
-            f"{metrics[f'{split}_accuracy']:.4f}",
-            f"{metrics[f'{split}_f1']:.4f}",
-            f"{metrics[f'{split}_precision']:.4f}",
-            f"{metrics[f'{split}_recall']:.4f}",
+            f"{metrics.get(f'{split}_loss', 0.0):.4f}",
+            f"{metrics.get(f'{split}_accuracy', 0.0):.4f}",
+            f"{metrics.get(f'{split}_f1', 0.0):.4f}",
+            f"{metrics.get(f'{split}_precision', 0.0):.4f}",
+            f"{metrics.get(f'{split}_recall', 0.0):.4f}",
             f"{metrics.get(f'{split}_qwk', 0.0):.4f}",
         ]
 

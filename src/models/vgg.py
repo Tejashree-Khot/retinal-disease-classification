@@ -48,7 +48,7 @@ class VGGModel(BaseModel):
 
     def get_input_size(self) -> tuple[int, int]:
         """Get recommended input size for VGG."""
-        return (224, 224)
+        return (448, 448)
 
     def unfreeze_classifier(self) -> None:
         """Unfreeze the classifier head."""

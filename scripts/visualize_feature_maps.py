@@ -81,7 +81,7 @@ class FeatureMapVisualizer:
 
         plt.tight_layout()
         if save_path:
-            plt.savefig(save_path, bbox_inches="tight", dpi=150)
+            plt.savefig(save_path, bbox_inches="tight", dpi=80)
         if show:
             plt.show()
         plt.close(fig)
@@ -151,6 +151,8 @@ def make_argparser():
 if __name__ == "__main__":
     args = make_argparser()
 
+    random.seed(42)  # for reproducibility for all the models with same input image
+
     model_name = args.model_name
     variant = args.variant
 
@@ -166,10 +168,10 @@ if __name__ == "__main__":
 
     shutil.copy(image_path, output_dir / f"{model_name}_{variant}_input_image.jpg")
 
-    model = create_model(model_name, variant, num_classes=len(CLASSES), pretrained=False)
-    if not checkpoint_path.exists():
-        raise FileNotFoundError(f"Checkpoint file not found: {checkpoint_path}")
-    model.load_state_dict(torch.load(checkpoint_path, map_location="cpu"), strict=False)
+    model = create_model(model_name, variant, num_classes=len(CLASSES), pretrained=True)
+    # if not checkpoint_path.exists():
+    #     raise FileNotFoundError(f"Checkpoint file not found: {checkpoint_path}")
+    # model.load_state_dict(torch.load(checkpoint_path, map_location="cpu"), strict=False)
 
     visualizer = FeatureMapVisualizer(model, device="cpu")
     for idx, layer in enumerate(visualizer.conv_layers):

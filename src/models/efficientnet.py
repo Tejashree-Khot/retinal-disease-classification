@@ -83,13 +83,20 @@ class EfficientNetModel(BaseModel):
         return self.model.features[-1]
 
     def get_selected_conv_layers_in_order(self) -> list[nn.Module]:
-        """Get all convolutional layers in the model in forward order."""
+        """Get representative conv layers in forward order for EfficientNet."""
         layers = []
-        block = []
-        for layer in self.model.features:
-            if isinstance(layer, nn.Conv2d):
-                block.append(layer)
-            elif isinstance(layer, nn.MaxPool2d) and block:
-                layers.append(block[-1])
-                block = []
+        for block in self.model.features:
+            # Each block is either Conv2dNormActivation or a Sequential of MBConv blocks
+            if isinstance(block, nn.Sequential):
+                # Get last MBConv block
+                last_mbconv = block[-1]
+                # Get its last Conv2d layer
+                convs = [m for m in last_mbconv.modules() if isinstance(m, nn.Conv2d)]
+                if convs:
+                    layers.append(convs[-1])
+            else:
+                # Stem or single Conv2dNormActivation
+                convs = [m for m in block.modules() if isinstance(m, nn.Conv2d)]
+                if convs:
+                    layers.append(convs[-1])
         return layers

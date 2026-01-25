@@ -70,9 +70,9 @@ class ConvNeXtModel(BaseModel):
         """Get all convolutional layers in the model in forward order."""
         layers = [
             self.model.features[0],
-            self.model.features[1][-1].block[0],
-            self.model.features[3][-1].block[0],
-            self.model.features[5][-1].block[0],
-            self.model.features[7][-1].block[0],
+            self.model.features[1][-1],
+            self.model.features[3][-1],
+            self.model.features[5][-1],
+            self.model.features[7][-1],
         ]
         return layers

@@ -135,6 +135,13 @@ class Trainer:
         LOGGER.info(f"Starting training on {self.device}")
         self.model.freeze_backbone()
 
+        if self.config.resume_checkpoint_path:
+            self.model, epoch, metrics = CheckpointManager.load_checkpoint(
+                self.model, self.config.resume_checkpoint_path, device=self.device, optimizer=self.optimizer
+            )
+            LOGGER.info(f"Resumed training from epoch {epoch}")
+            log_metrics(metrics)
+
         for epoch in range(self.config.epochs):
             if epoch == self.config.unfreeze_epoch and self.config.unfreeze_all:
                 # drop learning rate by 10x after unfreezing the backbone
