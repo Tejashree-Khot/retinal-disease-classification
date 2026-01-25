@@ -22,7 +22,7 @@ ANNOTATIONS_COLUMN_INDEX_MAP = {
 }
 
 # Change column name to change the label column
-LABEL_COLUMN_NAME = "Risk of macular edema"
+LABEL_COLUMN_NAME = "class"
 
 CLASSES = ANNOTATIONS_COLUMN_INDEX_MAP[LABEL_COLUMN_NAME]
 CLASSES_DICT = OrderedDict(zip(CLASSES, range(len(CLASSES))))

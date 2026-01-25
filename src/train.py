@@ -5,6 +5,7 @@ from pathlib import Path
 
 import wandb
 
+from dataloader.data_utils import CLASSES, LABEL_COLUMN_NAME
 from trainer import Trainer, TrainerConfig
 from utils.logger import configure_logging
 
@@ -12,10 +13,11 @@ configure_logging()
 LOGGER = logging.getLogger("train")
 
 
-def setup_wandb(config: TrainerConfig) -> None:
+def setup_wandb(config: TrainerConfig, experiment_name: str) -> None:
     """Initialize wandb for experiment tracking."""
     wandb.init(
         project=config.wandb_project,
+        name=experiment_name,
         config={
             "model": config.model_name,
             "epochs": config.epochs,
@@ -23,6 +25,8 @@ def setup_wandb(config: TrainerConfig) -> None:
             "learning_rate": config.learning_rate,
             "weight_decay": config.weight_decay,
             "scheduler": config.scheduler,
+            "classes": CLASSES,
+            "label_column_name": LABEL_COLUMN_NAME,
         },
         dir=config.wandb_dir,
     )
@@ -30,19 +34,28 @@ def setup_wandb(config: TrainerConfig) -> None:
 
 def main() -> None:
     """Run training with specified configuration."""
-
-    model_name = "convnext"
-    variant = "large"
     root_dir = Path(__file__).parent.parent
+
+    model_name = "resnet"
+    variant = "50"
+
+    param_dict = {}
+
+    if param_dict:
+        param_str = "_".join([f"{k}_{v}" for k, v in param_dict.items()])
+        experiment_name = f"{model_name}_{variant}_{LABEL_COLUMN_NAME.split(' ')[-1]}_{param_str}"
+    else:
+        experiment_name = f"{model_name}_{variant}_{LABEL_COLUMN_NAME.split(' ')[-1]}"
 
     config = TrainerConfig(
         model_name=model_name,
         variant=variant,
         train_path=root_dir / "data" / "IDRiD" / "Train",
         val_path=root_dir / "data" / "IDRiD" / "Test",
-        resume_checkpoint_path=root_dir / "output" / "checkpoints" / f"{model_name}_{variant}_best_model.pt",
+        **param_dict,
+        # resume_checkpoint_path=root_dir / "output" / "checkpoints" / f"{model_name}_{variant}_best_model.pt",
     )
-    setup_wandb(config)
+    setup_wandb(config, experiment_name)
     trainer = Trainer(config)
     results = trainer.train()
     LOGGER.info(f"Training completed. Best F1: {results['best_f1']:.4f}")
