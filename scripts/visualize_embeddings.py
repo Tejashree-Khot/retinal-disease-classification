@@ -1,5 +1,6 @@
 """Embedding visualization utilities for CNN models."""
 
+import argparse
 import os
 import sys
 from pathlib import Path
@@ -13,10 +14,12 @@ from torch import Tensor
 
 sys.path.append(str(Path(__file__).parent.parent / "src"))
 
-from dataloader.data_loader import CustomDataset, get_data_loader
+from dataloader.data_loader import CustomDataset, DataLoader, get_data_loader
 from dataloader.data_utils import CLASSES
 from models.base_model import BaseModel
+from models.checkpoint import CheckpointManager
 from models.model_factory import create_model
+from utils.helper import get_device
 
 
 def _get_feature_layer(model: BaseModel) -> nn.Module:
@@ -48,40 +51,17 @@ class FeatureExtractor:
         self.features = []
 
 
-def visualize_embeddings(
-    data_dir: Path,
-    model: BaseModel | None = None,
-    model_name: str = "resnet",
-    variant: str = "18",
-    model_path: str | None = None,
-    num_classes: int = 4,
-    max_images: int = 100,
-    batch_size: int = 32,
-    image_size: tuple[int, int] = (224, 224),
-    device: str = "cpu",
-    perplexity: float = 30.0,
-    random_state: int = 42,
-    show: bool = True,
-    save_path: str | None = None,
-    **model_kwargs,
+def generate_embeddings(
+    model: BaseModel, dataloader: DataLoader, max_images: int = 100, random_state: int = 42
 ) -> tuple[np.ndarray, np.ndarray]:
     """Extract embeddings from any BaseModel and visualize with t-SNE or UMAP."""
-    if model is None:
-        model = create_model(model_name, variant, num_classes=num_classes, **model_kwargs)
-        if model_path:
-            model.load_state_dict(torch.load(model_path, map_location=device, weights_only=True))
-    model.to(device).eval()
-
-    dataset = CustomDataset(data_dir, size=image_size, data_type="test")
-    dataloader = get_data_loader(dataset, batch_size=batch_size)
-
     embeddings = []
     labels = []
 
     with torch.no_grad(), FeatureExtractor(model) as extractor:
         collected = 0
         for images, lbls in dataloader:
-            images = images.to(device)
+            images = images.to(get_device("auto"))
             _ = model(images)
 
             feats = extractor.features[-1]
@@ -99,37 +79,108 @@ def visualize_embeddings(
     embeddings_tensor = torch.cat(embeddings).numpy()
     labels_array = torch.cat(labels).numpy()
 
+    perplexity = 30.0
     effective_perplexity = min(perplexity, max(1.0, len(embeddings_tensor) - 1))
     reducer = TSNE(n_components=2, random_state=random_state, perplexity=effective_perplexity)
     embeddings_2d = reducer.fit_transform(embeddings_tensor)
-
-    if show or save_path:
-        plt.figure(figsize=(10, 8))
-        for label in sorted(set(labels_array)):
-            idx = labels_array == label
-            label_name = CLASSES[label] if label < len(CLASSES) else f"Class {label}"
-            plt.scatter(embeddings_2d[idx, 0], embeddings_2d[idx, 1], label=label_name, alpha=0.7, s=50)
-        plt.legend(loc="best")
-        plt.title(f"Embedding Visualization for {model_name}")
-        plt.xlabel("Component 1")
-        plt.ylabel("Component 2")
-        plt.tight_layout()
-
-        if save_path:
-            os.makedirs(os.path.dirname(save_path), exist_ok=True)
-            plt.savefig(save_path, bbox_inches="tight", dpi=150)
-        if show:
-            plt.show()
-        plt.close()
-
     return embeddings_2d, labels_array
 
 
-if __name__ == "__main__":
-    data_dir = Path("../data/IDRiD/Train")
-    output_dir = Path("../output/embeddings")
+def plot_embeddings(embeddings_2d, labels_array, title: str, show: bool = False, save_path: str | None = None):
+    """Plot embeddings."""
+    plt.figure(figsize=(10, 8))
+    for label in sorted(set(labels_array)):
+        idx = labels_array == label
+        label_name = CLASSES[label] if label < len(CLASSES) else f"Class {label}"
+        plt.scatter(embeddings_2d[idx, 0], embeddings_2d[idx, 1], label=label_name, alpha=0.7, s=50)
+    plt.legend(loc="best")
+    plt.title(f"Embedding Visualization for {title}")
+    plt.xlabel("Component 1")
+    plt.ylabel("Component 2")
+    plt.tight_layout()
 
-    for model_name, variant in [("resnet", "18"), ("vgg", "16"), ("efficientnet", "b7"), ("convnext", "large")]:
-        visualize_embeddings(
-            data_dir=data_dir, show=False, save_path=output_dir / f"embeddings_{model_name}.png", model_name=model_name
+    if save_path:
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        plt.savefig(save_path, bbox_inches="tight", dpi=150)
+    if show:
+        plt.show()
+    plt.close()
+
+
+def plot_all_embeddings(results, show: bool = False, save_path: str | None = None):
+    """Plot all embeddings in a grid."""
+    num_models = len(results)
+    cols = 2
+    rows = (num_models + cols - 1) // cols
+
+    fig, axes = plt.subplots(rows, cols, figsize=(cols * 7, rows * 6))
+    axes = np.array(axes).reshape(-1)
+
+    for ax, (title, emb, labels) in zip(axes, results):
+        for label in sorted(set(labels)):
+            idx = labels == label
+            label_name = CLASSES[label] if label < len(CLASSES) else f"Class {label}"
+            ax.scatter(emb[idx, 0], emb[idx, 1], label=label_name, alpha=0.7, s=40)
+
+        ax.set_title(title)
+        ax.set_xlabel("Component 1")
+        ax.set_ylabel("Component 2")
+        ax.legend(fontsize=8)
+
+    # Hide unused subplots
+    for ax in axes[len(results) :]:
+        ax.axis("off")
+
+    plt.tight_layout()
+
+    if save_path:
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        plt.savefig(save_path, dpi=150, bbox_inches="tight")
+
+    if show:
+        plt.show()
+    plt.close()
+
+
+def make_argparser():
+    parser = argparse.ArgumentParser(description="Visualize feature maps and layer evolution of a CNN model.")
+    parser.add_argument("--model_name", required=False)
+    parser.add_argument("--variant", required=False)
+    parser.add_argument("--image_path", type=Path, default=None, help="Path to the image to visualize.")
+    return parser.parse_args()
+
+
+def main(args: argparse.Namespace):
+    root_dir = Path(__file__).parent.parent
+    output_dir = root_dir / "output" / "embeddings"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    data_dir = root_dir / "data" / "IDRiD" / "Test"
+
+    if args.model_name:
+        models = [(args.model_name, args.variant)]
+    else:
+        models = [("resnet", "50"), ("vgg", "16"), ("efficientnet", "b7"), ("convnext", "large")]
+
+    results = []
+
+    for model_name, variant in models:
+        checkpoint_path = root_dir / "output" / "checkpoints" / f"{model_name}_{variant}_best_model.pt"
+
+        model = create_model(model_name, variant, num_classes=len(CLASSES), pretrained=False)
+        model = CheckpointManager.load_for_inference(model, checkpoint_path, device=get_device("auto"))
+
+        dataset = CustomDataset(data_dir, size=model.get_input_size(), data_type="test")
+        dataloader = get_data_loader(dataset, batch_size=4)
+
+        embeddings_2d, labels = generate_embeddings(
+            dataloader=dataloader, model=model, max_images=1000, random_state=42
         )
+        results.append((f"{model_name}_{variant}", embeddings_2d, labels))
+        save_path = output_dir / f"embeddings_{model_name}_{variant}.png"
+        plot_embeddings(embeddings_2d, labels, f"{model_name}_{variant}", show=True, save_path=save_path)
+
+    plot_all_embeddings(results, show=True, save_path=output_dir / "all_embeddings.png")
+
+
+if __name__ == "__main__":
+    main(make_argparser())
