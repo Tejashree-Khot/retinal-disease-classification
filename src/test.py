@@ -1,5 +1,6 @@
 """Test script for evaluating trained models."""
 
+import argparse
 import logging
 from pathlib import Path
 
@@ -17,18 +18,27 @@ configure_logging()
 LOGGER = logging.getLogger("test")
 
 
-def main() -> None:
-    """Run model evaluation on test dataset."""
-    model_name = "convnext"
-    variant = "large"
-    root = Path(__file__).parent.parent
-    checkpoint_path = root / "output" / "checkpoints" / f"{model_name}_{variant}_best_model.pt"
-    test_path = root / "data" / "IDRiD" / "Test"
+def make_argparser() -> argparse.ArgumentParser:
+    """Create argument parser for test script."""
+    parser = argparse.ArgumentParser(description="Test a trained model on the test dataset.")
+    parser.add_argument("--model_name", type=str, default="convnext", help="Name of the model to test.")
+    parser.add_argument("--variant", type=str, default="large", help="Variant of the model to test.")
+    return parser
 
+
+def main(args: argparse.Namespace) -> None:
+    """Run model evaluation on test dataset."""
+    root = Path(__file__).parent.parent
+
+    model_name = args.model_name
+    variant = args.variant
+
+    checkpoint_path = root / "output" / "checkpoints" / f"{model_name}_{variant}_best_model.pt"
     model = create_model(model_name, variant, num_classes=len(CLASSES), pretrained=False)
     model = CheckpointManager.load_for_inference(model, checkpoint_path, device=get_device("auto"))
     LOGGER.info(f"Loaded model from {checkpoint_path}")
 
+    test_path = root / "data" / "IDRiD" / "Test"
     test_dataset = CustomDataset(test_path, model.get_input_size(), "test")
     test_loader = get_data_loader(test_dataset, batch_size=8)
 
@@ -41,4 +51,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    main(make_argparser().parse_args())

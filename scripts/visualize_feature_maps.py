@@ -18,7 +18,9 @@ sys.path.append(str(Path(__file__).parent.parent / "src"))
 from dataloader.data_preprocessing import get_image_transforms, load_image
 from dataloader.data_utils import CLASSES
 from models.base_model import BaseModel
+from models.checkpoint import CheckpointManager
 from models.model_factory import create_model
+from utils.helper import get_device
 from utils.logger import configure_logging
 
 configure_logging()
@@ -144,35 +146,37 @@ def make_argparser():
     parser.add_argument(
         "--model_name", type=str, default="resnet", choices=["resnet", "vgg", "efficientnet", "convnext"]
     )
-    parser.add_argument("--variant", type=str, default="18", choices=["18", "16", "b7", "large"])
+    parser.add_argument("--variant", type=str, default="18")
+    parser.add_argument("--image_path", type=Path, default=None, help="Path to the image to visualize.")
     return parser.parse_args()
 
 
-if __name__ == "__main__":
-    args = make_argparser()
-
-    random.seed(42)  # for reproducibility for all the models with same input image
+def main(args: argparse.Namespace):
+    root = Path(__file__).parent.parent
+    output_dir = root / "output" / "feature_maps"
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     model_name = args.model_name
     variant = args.variant
-
-    root = Path(__file__).parent.parent
-    image_dir = root / "data" / "IDRiD" / "Train" / "images"
-    output_dir = root / "output" / "feature_maps"
     checkpoint_path = root / "output" / "checkpoints" / f"{model_name}_{variant}_best_model.pt"
 
-    output_dir.mkdir(parents=True, exist_ok=True)
-    image_path = Path(random.choice(list(image_dir.rglob("*.jpg"))))
+    if not checkpoint_path.exists():
+        raise FileNotFoundError(f"Checkpoint file not found: {checkpoint_path}")
+
+    if args.image_path:
+        image_path = args.image_path
+    else:
+        random.seed(42)  # for reproducibility for all the models with same input image
+        image_dir = root / "data" / "IDRiD" / "Train" / "images"
+        image_path = Path(random.choice(list(image_dir.rglob("*.jpg"))))
 
     LOGGER.info(f"Visualizing feature maps for {image_path.name}")
 
-    shutil.copy(image_path, output_dir / f"{model_name}_{variant}_input_image.jpg")
-
     model = create_model(model_name, variant, num_classes=len(CLASSES), pretrained=True)
-    # if not checkpoint_path.exists():
-    #     raise FileNotFoundError(f"Checkpoint file not found: {checkpoint_path}")
-    # model.load_state_dict(torch.load(checkpoint_path, map_location="cpu"), strict=False)
+    model = CheckpointManager.load_for_inference(model, checkpoint_path, device=get_device("auto"))
+    LOGGER.info(f"Loaded model for visualization from {checkpoint_path}")
 
+    shutil.copy(image_path, output_dir / f"{model_name}_{variant}_input_image.jpg")
     visualizer = FeatureMapVisualizer(model, device="cpu")
     for idx, layer in enumerate(visualizer.conv_layers):
         visualizer.visualize(
@@ -182,3 +186,7 @@ if __name__ == "__main__":
     animator = LayerEvolutionAnimator(model, device="cpu")
     LOGGER.info(f"Animating layer evolution for {model_name}_{variant}")
     animator.animate(image_path, save_path=output_dir / f"{model_name}_{variant}_layer_evolution.gif", show=False)
+
+
+if __name__ == "__main__":
+    main(make_argparser())
