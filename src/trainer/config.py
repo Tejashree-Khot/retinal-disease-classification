@@ -15,7 +15,7 @@ class TrainerConfig:
     train_path: Path
     val_path: Path
     num_classes: int = len(CLASSES)
-    epochs: int = 10
+    epochs: int = 6
     batch_size: int = 8
     learning_rate: float = 5e-4
     weight_decay: float = 1e-5

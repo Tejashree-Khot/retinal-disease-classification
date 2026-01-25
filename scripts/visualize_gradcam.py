@@ -1,11 +1,15 @@
 """Feature map visualization using Grad-CAM for CNN models."""
 
+import argparse
+import logging
 import os
+import random
 import sys
 from pathlib import Path
 from typing import Literal
 
 import numpy as np
+import pandas as pd
 import torch
 from matplotlib import pyplot as plt
 from pytorch_grad_cam import GradCAM
@@ -15,9 +19,13 @@ from pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget
 sys.path.append(str(Path(__file__).parent.parent / "src"))
 
 from dataloader.data_preprocessing import get_image_transforms, load_image
-from dataloader.data_utils import CLASSES
+from dataloader.data_utils import CLASSES, CLASSES_DICT
 from models.base_model import BaseModel
 from models.model_factory import create_model
+from utils.logger import configure_logging
+
+configure_logging()
+LOGGER = logging.getLogger("gradcam")
 
 
 class GradCAMVisualizer:
@@ -104,23 +112,93 @@ class GradCAMVisualizer:
         return fig
 
 
-if __name__ == "__main__":
-    model_name = "convnext"
-    variant = "large"
+def plot_classwise_gradcam(
+    df: pd.DataFrame,
+    image_dir: Path,
+    visualizer: GradCAMVisualizer,
+    pred_col="predictions",
+    save_path: Path | None = None,
+):
+    """Plot classwise Grad-CAM for a given dataframe of predictions."""
+    image_paths = sorted(image_dir.glob("*.jpg"))
+    n = len(CLASSES)
 
-    root = Path(__file__).parent.parent.parent
-    image_dir = root / "data" / "IDRiD" / "Train" / "images"
+    fig, ax = plt.subplots(2, n, figsize=(4 * n, 8))
+    random.seed(42)
+
+    splits = [
+        df[df.labels == df[pred_col]],  # correct
+        df[df.labels != df[pred_col]],  # wrong
+    ]
+
+    transform = get_image_transforms(visualizer.base_model.get_input_size(), data_type="test")
+
+    for i, cls in enumerate(CLASSES):
+        cls_id = CLASSES_DICT[cls]
+
+        for r, sub_df in enumerate(splits):
+            row = sub_df[sub_df.labels == cls_id].sample(1).iloc[0]
+            img_path = image_paths[row.name]
+
+            img_tensor = load_image(img_path, transform)
+            cam = visualizer.visualize(img_tensor, class_idx=row[pred_col])
+
+            ax[r, i].imshow(cam)
+            ax[r, i].set_title(f"GT: {CLASSES[row.labels]} | Pred: {CLASSES[row[pred_col]]}", fontsize=9)
+            ax[r, i].axis("off")
+
+    ax[0, 0].set_ylabel("Correct")
+    ax[1, 0].set_ylabel("Wrong")
+    plt.tight_layout()
+
+    if save_path:
+        plt.savefig(save_path, bbox_inches="tight", dpi=80)
+
+    plt.show()
+
+
+def make_argparser():
+    parser = argparse.ArgumentParser(description="Visualize feature maps and layer evolution of a CNN model.")
+    parser.add_argument(
+        "--model_name", type=str, default="convnext", choices=["resnet", "vgg", "efficientnet", "convnext"]
+    )
+    parser.add_argument("--variant", type=str, default="large")
+    parser.add_argument("--image_path", type=Path, default=None, help="Path to the image to visualize.")
+    parser.add_argument("--prediction_csv", type=Path, default=None, help="Path to the prediction csv file.")
+    return parser.parse_args()
+
+
+def main(args: argparse.Namespace):
+    random.seed(42)
+    root = Path(__file__).parent.parent
     output_dir = root / "output" / "gradcam"
-    checkpoint_path = root / "output" / "checkpoints" / f"{model_name}_best_model.pt"
-
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    model_name = args.model_name
+    variant = args.variant
+
+    if args.image_path:
+        image_path = args.image_path
+    elif args.prediction_csv:
+        image_dir = root / "data" / "IDRiD" / "Train" / "images"
+        prediction_df = pd.read_csv(args.prediction_csv)
+
+    checkpoint_path = root / "output" / "checkpoints" / f"{model_name}_{variant}_best_model.pt"
     model = create_model(model_name, variant, num_classes=len(CLASSES), pretrained=False)
     model.load_state_dict(torch.load(checkpoint_path, map_location="cpu"), strict=False)
-
-    image_paths = list(image_dir.glob("*.jpg"))[:8]
+    LOGGER.info(f"Loaded model from {checkpoint_path}")
 
     visualizer = GradCAMVisualizer(model, device="cpu")
-    visualizer.visualize_batch(
-        image_paths=image_paths, save_path=str(output_dir / f"{model_name}_gradcam.png"), show=False
-    )
+
+    if args.image_path:
+        LOGGER.info(f"Visualizing Grad-CAM for {args.image_path.name}")
+        visualizer.visualize(image_path, save_path=str(output_dir / f"{model_name}_{variant}_gradcam.png"), show=False)
+    elif prediction_df is not None:
+        LOGGER.info(f"Plotting classwise Grad-CAM for {args.prediction_csv.name}")
+        plot_classwise_gradcam(
+            prediction_df, image_dir, visualizer, save_path=output_dir / f"{model_name}_{variant}_classwise_gradcam.png"
+        )
+
+
+if __name__ == "__main__":
+    main(make_argparser())

@@ -67,7 +67,7 @@ class Trainer:
         if self.config.scheduler == "step":
             return StepLR(self.optimizer, step_size=10, gamma=0.1)
         if self.config.scheduler == "cosine":
-            return CosineAnnealingLR(self.optimizer, T_max=self.config.epochs)
+            return CosineAnnealingLR(self.optimizer, T_max=self.config.epochs * 5)
         return None
 
     def _setup_dataloaders(self) -> tuple:
