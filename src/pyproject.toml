@@ -5,6 +5,7 @@ description = "Retinal disease classification Trainer"
 requires-python = ">=3.13"
 dependencies = [
     "datasets",
+    "evaluate",
     "focal_loss_torch",
     "grad-cam",
     "kagglehub",

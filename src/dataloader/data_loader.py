@@ -6,13 +6,20 @@ import numpy as np
 import torch
 from torch import Tensor
 from torch.utils.data import DataLoader, Dataset, WeightedRandomSampler
+from transformers import AutoProcessor
 
-from dataloader.data_preprocessing import get_image_transforms, load_image, load_image_paths_and_labels
+from dataloader.data_preprocessing import (
+    get_image_transforms,
+    get_image_transforms_from_processor,
+    load_image,
+    load_image_paths_and_labels,
+    load_image_paths_and_labels_and_captions,
+)
 from dataloader.data_utils import CLASSES_DICT
 
 
 class CustomDataset(Dataset):
-    """PyTorch custom dataloader for images + text + labels."""
+    """PyTorch custom dataloader for images + labels."""
 
     def __init__(self, dataset_path: Path, size: tuple[int], data_type: str):
         self.image_paths, self.labels = load_image_paths_and_labels(dataset_path)
@@ -25,6 +32,30 @@ class CustomDataset(Dataset):
         label = torch.tensor(self.labels[index], dtype=torch.long)
         image = load_image(self.image_paths[index], self.image_transform)
         return image, label
+
+
+class MedSigLIPDataset(Dataset):
+    """PyTorch dataset for MedSigLIP model with images, text, and labels."""
+
+    def __init__(self, dataset_path: Path, processor: AutoProcessor):
+        self.image_paths, self.labels, self.captions = load_image_paths_and_labels_and_captions(dataset_path)
+        self.processor = processor
+        self.transform = get_image_transforms_from_processor(processor)
+
+    def __len__(self) -> int:
+        return len(self.image_paths)
+
+    def __getitem__(self, index: int) -> dict:
+        image = load_image(self.image_paths[index], self.transform)
+        inputs = self.processor.tokenizer(
+            self.captions[index], max_length=64, padding="max_length", truncation=True, return_attention_mask=True
+        )
+        return {
+            "pixel_values": image,
+            "input_ids": inputs["input_ids"],
+            "attention_mask": inputs["attention_mask"],
+            "labels": self.labels[index],
+        }
 
 
 def get_sampler(labels: list[int]) -> WeightedRandomSampler:
@@ -54,6 +85,14 @@ def get_data_loader(dataset: CustomDataset, batch_size: int, use_weighted_sample
     )
 
     return data_loader
+
+
+def collate_fn_text_image(examples: list[dict]) -> dict:
+    """Collate function for text and image data."""
+    pixel_values = torch.tensor([example["pixel_values"] for example in examples])
+    input_ids = torch.tensor([example["input_ids"] for example in examples])
+    attention_mask = torch.tensor([example["attention_mask"] for example in examples])
+    return {"pixel_values": pixel_values, "input_ids": input_ids, "attention_mask": attention_mask, "return_loss": True}
 
 
 if __name__ == "__main__":

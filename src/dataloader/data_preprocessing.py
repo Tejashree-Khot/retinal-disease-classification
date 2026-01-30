@@ -22,8 +22,10 @@ import pandas as pd
 import torch
 from PIL import Image
 from torchvision import transforms
+from torchvision.transforms import Compose, InterpolationMode, Normalize, Resize, ToTensor
+from transformers import AutoProcessor
 
-from dataloader.data_utils import CLASSES_DICT, LABEL_COLUMN_NAME
+from dataloader.data_utils import CLASSES, CLASSES_DICT, LABEL_COLUMN_NAME
 from utils.logger import configure_logging
 
 configure_logging()
@@ -86,3 +88,46 @@ def load_image_paths_and_labels(dataset_path: Path) -> tuple[list[Path], list[in
             labels.append(int(CLASSES_DICT[str(label)]))
     LOGGER.info(f"Loaded {len(image_paths)} image_paths from {dataset_path}.")
     return image_paths, labels
+
+
+def get_image_transforms_from_processor(processor: AutoProcessor) -> Callable:
+    """Get image transforms from processor."""
+    print(processor.image_processor)
+    size = processor.image_processor.size["height"]
+    mean = processor.image_processor.image_mean
+    std = processor.image_processor.image_std
+    return Compose(
+        [Resize((size, size), interpolation=InterpolationMode.BILINEAR), ToTensor(), Normalize(mean=mean, std=std)]
+    )
+
+
+def preprocess(examples, transform: Callable, processor: AutoProcessor):
+    pixel_values = [transform(image.convert("RGB")) for image in examples["image"]]
+    captions = [CLASSES[label] for label in examples["label"]]
+    inputs = processor.tokenizer(
+        captions, max_length=64, padding="max_length", truncation=True, return_attention_mask=True
+    )
+    inputs["pixel_values"] = pixel_values
+    return inputs
+
+
+def load_image_paths_and_labels_and_captions(dataset_path: Path) -> tuple[list[Path], list[int], list[str]]:
+    """Read image paths and labels from the dataset."""
+    image_paths = []
+    labels = []
+    captions = []
+
+    data = pd.read_csv(dataset_path / "annotations.csv")
+    LOGGER.info(f"Loading {len(data)} image_paths from {dataset_path}...")
+
+    for _, row in data.iterrows():
+        label = row[LABEL_COLUMN_NAME]
+        caption = row["caption"]
+        image_path = dataset_path / "images" / f"{row['Image name']}"
+
+        if image_path.exists():
+            image_paths.append(image_path)
+            labels.append(int(CLASSES_DICT[str(label)]))
+            captions.append(caption)
+    LOGGER.info(f"Loaded {len(image_paths)} image_paths from {dataset_path}.")
+    return image_paths, labels, captions
