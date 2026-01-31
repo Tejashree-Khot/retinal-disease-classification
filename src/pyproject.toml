@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Retinal disease classification Trainer"
 requires-python = ">=3.13"
 dependencies = [
+    "accelerate",
     "datasets",
     "evaluate",
     "focal_loss_torch",
@@ -15,6 +16,8 @@ dependencies = [
     "scikit-learn",
     "torch",
     "torchvision",
+    "tensorboard",
+    "transformers",
     "tqdm",
     "wandb",
 ]

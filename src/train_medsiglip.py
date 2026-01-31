@@ -4,7 +4,7 @@ import argparse
 import logging
 from pathlib import Path
 
-from transformers import AutoModel, AutoProcessor, Trainer, TrainingArguments
+from transformers import AutoImageProcessor, AutoModel, AutoTokenizer, Trainer, TrainingArguments
 
 from dataloader.data_loader import MedSigLIPDataset, collate_fn_text_image
 from utils.logger import configure_logging
@@ -31,18 +31,19 @@ def main(args: argparse.Namespace) -> None:
     root = Path(__file__).parent.parent
 
     LOGGER.info(f"Loading model: {args.model_id}")
-    processor = AutoProcessor.from_pretrained(args.model_id)
+    image_processor = AutoImageProcessor.from_pretrained(args.model_id)
+    tokenizer = AutoTokenizer.from_pretrained(args.model_id)
     model = AutoModel.from_pretrained(args.model_id)
 
     train_path = root / "data" / "IDRiD" / "Train"
     val_path = root / "data" / "IDRiD" / "Test"
 
     LOGGER.info(f"Loading training data from: {train_path}")
-    train_dataset = MedSigLIPDataset(train_path, processor)
+    train_dataset = MedSigLIPDataset(train_path, image_processor, tokenizer)
     LOGGER.info(f"Training samples: {len(train_dataset)}")
 
     LOGGER.info(f"Loading validation data from: {val_path}")
-    val_dataset = MedSigLIPDataset(val_path, processor)
+    val_dataset = MedSigLIPDataset(val_path, image_processor, tokenizer)
     LOGGER.info(f"Validation samples: {len(val_dataset)}")
 
     training_args = TrainingArguments(

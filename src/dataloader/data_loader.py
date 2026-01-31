@@ -6,13 +6,12 @@ import numpy as np
 import torch
 from torch import Tensor
 from torch.utils.data import DataLoader, Dataset, WeightedRandomSampler
-from transformers import AutoProcessor
+from transformers import AutoImageProcessor, AutoTokenizer
 
 from dataloader.data_preprocessing import (
     get_image_transforms,
-    get_image_transforms_from_processor,
+    get_medsiglip_image_transforms,
     load_image,
-    load_image_paths_and_labels,
     load_image_paths_and_labels_and_captions,
 )
 from dataloader.data_utils import CLASSES_DICT
@@ -22,7 +21,7 @@ class CustomDataset(Dataset):
     """PyTorch custom dataloader for images + labels."""
 
     def __init__(self, dataset_path: Path, size: tuple[int], data_type: str):
-        self.image_paths, self.labels = load_image_paths_and_labels(dataset_path)
+        self.image_paths, self.labels, _ = load_image_paths_and_labels_and_captions(dataset_path)
         self.image_transform = get_image_transforms(size, data_type)
 
     def __len__(self) -> int:
@@ -37,17 +36,18 @@ class CustomDataset(Dataset):
 class MedSigLIPDataset(Dataset):
     """PyTorch dataset for MedSigLIP model with images, text, and labels."""
 
-    def __init__(self, dataset_path: Path, processor: AutoProcessor):
+    def __init__(self, dataset_path: Path, image_processor: AutoImageProcessor, tokenizer: AutoTokenizer):
         self.image_paths, self.labels, self.captions = load_image_paths_and_labels_and_captions(dataset_path)
-        self.processor = processor
-        self.transform = get_image_transforms_from_processor(processor)
+        self.image_processor = image_processor
+        self.tokenizer = tokenizer
+        self.transform = get_medsiglip_image_transforms(image_processor)
 
     def __len__(self) -> int:
         return len(self.image_paths)
 
     def __getitem__(self, index: int) -> dict:
         image = load_image(self.image_paths[index], self.transform)
-        inputs = self.processor.tokenizer(
+        inputs = self.tokenizer(
             self.captions[index], max_length=64, padding="max_length", truncation=True, return_attention_mask=True
         )
         return {

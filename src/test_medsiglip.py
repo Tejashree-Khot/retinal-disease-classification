@@ -2,13 +2,14 @@
 
 import argparse
 import logging
+import os
 from pathlib import Path
 
 import evaluate
 import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from transformers import AutoModel, AutoProcessor
+from transformers import AutoImageProcessor, AutoModel, AutoTokenizer
 
 from dataloader.data_loader import MedSigLIPDataset
 from dataloader.data_utils import CLASSES
@@ -28,7 +29,12 @@ def make_argparser() -> argparse.ArgumentParser:
 
 
 def run_inference(
-    model: AutoModel, processor: AutoProcessor, data_loader: DataLoader, classes: list[str], device: torch.device
+    model: AutoModel,
+    image_processor: AutoImageProcessor,
+    tokenizer: AutoTokenizer,
+    data_loader: DataLoader,
+    classes: list[str],
+    device: torch.device,
 ) -> tuple[list[int], list[int]]:
     """Run zero-shot classification inference."""
     model.eval()
@@ -40,7 +46,7 @@ def run_inference(
             pixel_values = batch["pixel_values"].to(device)
             labels = batch["labels"]
 
-            text_inputs = processor.tokenizer(
+            text_inputs = tokenizer(
                 classes, max_length=64, padding="max_length", truncation=True, return_tensors="pt"
             ).to(device)
 
@@ -82,19 +88,20 @@ def main(args: argparse.Namespace) -> None:
     device = get_device("auto")
 
     LOGGER.info(f"Loading model: {args.model_path}")
-    processor = AutoProcessor.from_pretrained("openai/clip-vit-base-patch32")
-    # processor = AutoProcessor.from_pretrained(args.model_path)
+    image_processor = AutoImageProcessor.from_pretrained(args.model_path)
+    tokenizer = AutoTokenizer.from_pretrained(args.model_path)
+    tokenizer = AutoTokenizer.from_pretrained("openai/clip-vit-base-patch32")
     model = AutoModel.from_pretrained(args.model_path).to(device)
 
     test_path = root / "data" / "IDRiD" / "Test"
     LOGGER.info(f"Loading test data from: {test_path}")
-    test_dataset = MedSigLIPDataset(test_path, processor)
+    test_dataset = MedSigLIPDataset(test_path, image_processor, tokenizer)
     LOGGER.info(f"Test samples: {len(test_dataset)}")
 
     test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, collate_fn=collate_fn)
 
     LOGGER.info("Running inference...")
-    predictions, references = run_inference(model, processor, test_loader, CLASSES, device)
+    predictions, references = run_inference(model, image_processor, tokenizer, test_loader, CLASSES, device)
 
     metrics = compute_metrics(predictions, references)
     LOGGER.info(f"Accuracy: {metrics['accuracy']:.4f}")
