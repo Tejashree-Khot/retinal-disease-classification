@@ -37,8 +37,9 @@ def run_inference(
 
     with torch.no_grad():
         for batch in tqdm(data_loader, desc="Running inference..."):
-            labels = batch["labels"]
-            outputs = model(pixel_values=batch["pixel_values"], **batch)
+            labels = batch.pop("labels")
+            batch = {k: v.to(device) for k, v in batch.items()}
+            outputs = model(**batch)
             preds = outputs.logits_per_image.argmax(dim=1).cpu().tolist()
             predictions.extend(preds)
             references.extend(labels.tolist() if isinstance(labels, torch.Tensor) else labels)
@@ -62,11 +63,10 @@ def main(args: argparse.Namespace) -> None:
     device = get_device("auto")
 
     test_path = root / "data" / "IDRiD" / "Test"
-    size = (448, 448)
 
     LOGGER.info(f"Loading test data from: {test_path}")
     processor = AutoProcessor.from_pretrained(args.model_path)
-    test_dataset = MedSigLIPDataset(processor=processor, dataset_path=test_path, size=size, data_type="test")
+    test_dataset = MedSigLIPDataset(processor=processor, dataset_path=test_path)
     test_loader = get_data_loader(test_dataset, batch_size=args.batch_size)
     LOGGER.info(f"Test samples: {len(test_dataset)}")
 

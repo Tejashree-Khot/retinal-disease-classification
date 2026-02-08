@@ -121,7 +121,11 @@ class MedSigLIPDataset(Dataset):
         inputs = self.processor(
             text=self.captions[index], images=image, padding="max_length", truncation=True, return_tensors="pt"
         )
-        return {"pixel_values": inputs["pixel_values"], "input_ids": inputs["input_ids"], "labels": self.labels[index]}
+        return {
+            "pixel_values": inputs["pixel_values"].squeeze(0),
+            "input_ids": inputs["input_ids"].squeeze(0),
+            "labels": self.labels[index],
+        }
 
 
 def get_data_loader(
