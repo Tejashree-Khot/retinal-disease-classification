@@ -2,16 +2,15 @@
 
 import argparse
 import logging
-import os
 from pathlib import Path
 
 import evaluate
 import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from transformers import AutoImageProcessor, AutoModel, AutoTokenizer
+from transformers import AutoModel, AutoProcessor
 
-from dataloader.data_loader import MedSigLIPDataset
+from dataloader.data_loader import MedSigLIPDataset, get_data_loader
 from dataloader.data_utils import CLASSES
 from utils.helper import get_device
 from utils.logger import configure_logging
@@ -29,12 +28,7 @@ def make_argparser() -> argparse.ArgumentParser:
 
 
 def run_inference(
-    model: AutoModel,
-    image_processor: AutoImageProcessor,
-    tokenizer: AutoTokenizer,
-    data_loader: DataLoader,
-    classes: list[str],
-    device: torch.device,
+    model: AutoModel, data_loader: DataLoader, classes: list[str], device: torch.device
 ) -> tuple[list[int], list[int]]:
     """Run zero-shot classification inference."""
     model.eval()
@@ -43,32 +37,12 @@ def run_inference(
 
     with torch.no_grad():
         for batch in tqdm(data_loader, desc="Running inference..."):
-            pixel_values = batch["pixel_values"].to(device)
             labels = batch["labels"]
-
-            text_inputs = tokenizer(
-                classes, max_length=64, padding="max_length", truncation=True, return_tensors="pt"
-            ).to(device)
-
-            outputs = model(
-                pixel_values=pixel_values,
-                input_ids=text_inputs["input_ids"],
-                attention_mask=text_inputs["attention_mask"],
-            )
-            logits_per_image = outputs.logits_per_image
-            preds = logits_per_image.argmax(dim=1).cpu().tolist()
-
+            outputs = model(pixel_values=batch["pixel_values"], **batch)
+            preds = outputs.logits_per_image.argmax(dim=1).cpu().tolist()
             predictions.extend(preds)
             references.extend(labels.tolist() if isinstance(labels, torch.Tensor) else labels)
-
     return predictions, references
-
-
-def collate_fn(examples: list[dict]) -> dict:
-    """Collate function for test data loader."""
-    pixel_values = torch.stack([example["pixel_values"] for example in examples])
-    labels = torch.tensor([example["labels"] for example in examples])
-    return {"pixel_values": pixel_values, "labels": labels}
 
 
 def compute_metrics(predictions: list[int], references: list[int]) -> dict[str, float]:
@@ -87,21 +61,20 @@ def main(args: argparse.Namespace) -> None:
     root = Path(__file__).parent.parent
     device = get_device("auto")
 
-    LOGGER.info(f"Loading model: {args.model_path}")
-    image_processor = AutoImageProcessor.from_pretrained(args.model_path)
-    tokenizer = AutoTokenizer.from_pretrained(args.model_path)
-    tokenizer = AutoTokenizer.from_pretrained("openai/clip-vit-base-patch32")
-    model = AutoModel.from_pretrained(args.model_path).to(device)
-
     test_path = root / "data" / "IDRiD" / "Test"
+    size = (448, 448)
+
     LOGGER.info(f"Loading test data from: {test_path}")
-    test_dataset = MedSigLIPDataset(test_path, image_processor, tokenizer)
+    processor = AutoProcessor.from_pretrained(args.model_path)
+    test_dataset = MedSigLIPDataset(processor=processor, dataset_path=test_path, size=size, data_type="test")
+    test_loader = get_data_loader(test_dataset, batch_size=args.batch_size)
     LOGGER.info(f"Test samples: {len(test_dataset)}")
 
-    test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, collate_fn=collate_fn)
+    LOGGER.info(f"Loading model: {args.model_path}")
+    model = AutoModel.from_pretrained(args.model_path).to(device)
 
     LOGGER.info("Running inference...")
-    predictions, references = run_inference(model, image_processor, tokenizer, test_loader, CLASSES, device)
+    predictions, references = run_inference(model, test_loader, CLASSES, device)
 
     metrics = compute_metrics(predictions, references)
     LOGGER.info(f"Accuracy: {metrics['accuracy']:.4f}")

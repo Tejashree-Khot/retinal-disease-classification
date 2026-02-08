@@ -2,28 +2,26 @@
 name = "retinal-disease-classification"
 version = "0.1.0"
 description = "Retinal disease classification Trainer"
-requires-python = ">=3.13"
+requires-python = ">=3.10,<3.13"
 dependencies = [
     "accelerate",
     "datasets",
     "evaluate",
-    "focal_loss_torch",
     "grad-cam",
-    "kagglehub",
     "matplotlib",
     "numpy",
     "pandas",
+    "pillow",
     "scikit-learn",
+    "sentencepiece==0.2.1",
+    "tensorboard",
+    "tensorflow",
     "torch",
     "torchvision",
-    "tensorboard",
-    "transformers",
     "tqdm",
+    "transformers==4.57.6",
     "wandb",
 ]
-
-[project.optional-dependencies]
-umap = ["umap-learn"]
 
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]

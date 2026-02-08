@@ -3,7 +3,7 @@ name = "retinal-disease-classifier"
 version = "1.0.0"
 description = "Retinal Disease Classification"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = "==3.12.12"
 
 [tool.uv.workspace]
 members = [
@@ -24,11 +24,6 @@ dev = [
     "pytest-xdist",
     "ruff",
     "types-requests",
-]
-
-medsiglip =[
-    "tensorflow",
-    "transformers"
 ]
 
 [build-system]
