@@ -1,5 +1,6 @@
 """Training script entry point."""
 
+import argparse
 import logging
 from pathlib import Path
 
@@ -32,12 +33,19 @@ def setup_wandb(config: TrainerConfig, experiment_name: str) -> None:
     )
 
 
-def main() -> None:
+def make_argparser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="Train a model on the dataset.")
+    parser.add_argument("--model_name", type=str, default="resnet", help="Name of the model to train.")
+    parser.add_argument("--variant", type=str, default="50", help="Variant of the model to train.")
+    return parser
+
+
+def main(args: argparse.Namespace) -> None:
     """Run training with specified configuration."""
     root_dir = Path(__file__).parent.parent
 
-    model_name = "resnet"
-    variant = "50"
+    model_name = args.model_name
+    variant = args.variant
 
     param_dict = {}
 
@@ -62,4 +70,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    main(make_argparser().parse_args())
