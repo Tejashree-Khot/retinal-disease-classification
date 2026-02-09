@@ -8,6 +8,7 @@ dependencies = [
     "datasets",
     "evaluate",
     "grad-cam",
+    "kagglehub",
     "matplotlib",
     "numpy",
     "pandas",
