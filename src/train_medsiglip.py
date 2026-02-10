@@ -2,9 +2,10 @@
 
 import argparse
 import logging
+import os
 from pathlib import Path
 
-from transformers import AutoImageProcessor, AutoModel, AutoTokenizer, Trainer, TrainingArguments
+from transformers import AutoModel, AutoProcessor, EvalPrediction, Trainer, TrainingArguments
 
 from dataloader.data_loader import MedSigLIPDataset, collate_fn_text_image
 from utils.logger import configure_logging
@@ -12,56 +13,75 @@ from utils.logger import configure_logging
 configure_logging()
 LOGGER = logging.getLogger("train_medsiglip")
 
+os.environ["PYTORCH_ALLOC_CONF"] = "expandable_segments:True"
+
 
 def make_argparser() -> argparse.ArgumentParser:
     """Create argument parser for training script."""
     parser = argparse.ArgumentParser(description="Train MedSigLIP model.")
-    parser.add_argument("--model_id", type=str, default="google/medsiglip-448", help="Model ID to load.")
     parser.add_argument("--epochs", type=int, default=2, help="Number of training epochs.")
-    parser.add_argument("--learning_rate", type=float, default=1e-4, help="Learning rate.")
     parser.add_argument("--batch_size", type=int, default=8, help="Batch size per device.")
-    parser.add_argument("--gradient_accumulation_steps", type=int, default=8, help="Gradient accumulation steps.")
-    parser.add_argument("--output_dir", type=str, default="medsiglip-448-finetuned", help="Output directory.")
-    parser.add_argument("--push_to_hub", action="store_true", help="Push model to Hub.")
     return parser
+
+
+def compute_metrics(eval_pred: EvalPrediction) -> dict[str, float]:
+    """Compute contrastive accuracy from evaluation predictions."""
+    predictions = eval_pred.predictions
+    print(predictions)
+    if isinstance(predictions, tuple):
+        predictions = predictions[0]
+    preds = predictions[:, 0]
+    targets = predictions[:, 1]
+    accuracy = (preds == targets).mean()
+    return {"contrastive_accuracy": float(accuracy)}
 
 
 def main(args: argparse.Namespace) -> None:
     """Run MedSigLIP training."""
     root = Path(__file__).parent.parent
+    output_dir = root / "output" / "checkpoints" / "medsiglip-448-finetuned"
 
-    LOGGER.info(f"Loading model: {args.model_id}")
-    image_processor = AutoImageProcessor.from_pretrained(args.model_id)
-    tokenizer = AutoTokenizer.from_pretrained(args.model_id)
-    model = AutoModel.from_pretrained(args.model_id)
+    model_id = "google/medsiglip-448"
+
+    LOGGER.info(f"Loading model: {model_id}")
+    processor = AutoProcessor.from_pretrained(model_id)
+    model = AutoModel.from_pretrained(model_id)
+
+    model.gradient_checkpointing_enable()
+    model.config.use_cache = False
+
+    # Freeze text encoder
+    for p in model.text_model.parameters():
+        p.requires_grad = False
 
     train_path = root / "data" / "IDRiD" / "Train"
     val_path = root / "data" / "IDRiD" / "Test"
 
     LOGGER.info(f"Loading training data from: {train_path}")
-    train_dataset = MedSigLIPDataset(train_path, image_processor, tokenizer)
+    train_dataset = MedSigLIPDataset(processor=processor, dataset_path=train_path)
     LOGGER.info(f"Training samples: {len(train_dataset)}")
 
     LOGGER.info(f"Loading validation data from: {val_path}")
-    val_dataset = MedSigLIPDataset(val_path, image_processor, tokenizer)
+    val_dataset = MedSigLIPDataset(processor=processor, dataset_path=val_path)
     LOGGER.info(f"Validation samples: {len(val_dataset)}")
 
     training_args = TrainingArguments(
-        output_dir=args.output_dir,
+        output_dir=output_dir,
         num_train_epochs=args.epochs,
         per_device_train_batch_size=args.batch_size,
         per_device_eval_batch_size=args.batch_size,
-        gradient_accumulation_steps=args.gradient_accumulation_steps,
+        gradient_accumulation_steps=8,
         logging_steps=50,
         save_strategy="epoch",
         eval_strategy="steps",
         eval_steps=50,
-        learning_rate=args.learning_rate,
+        learning_rate=1e-4,
         weight_decay=0.01,
         warmup_steps=5,
         lr_scheduler_type="cosine",
-        push_to_hub=args.push_to_hub,
+        push_to_hub=False,
         report_to="tensorboard",
+        fp16=True,
     )
 
     trainer = Trainer(
@@ -70,12 +90,13 @@ def main(args: argparse.Namespace) -> None:
         train_dataset=train_dataset,
         eval_dataset=val_dataset,
         data_collator=collate_fn_text_image,
+        compute_metrics=compute_metrics,
     )
 
     LOGGER.info("Starting training...")
     trainer.train()
 
-    LOGGER.info(f"Saving model to: {args.output_dir}")
+    LOGGER.info(f"Saving model to: {output_dir}")
     trainer.save_model()
 
     LOGGER.info("Training completed.")

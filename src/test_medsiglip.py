@@ -5,6 +5,7 @@ import logging
 from pathlib import Path
 
 import evaluate
+import pandas as pd
 import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -43,6 +44,9 @@ def run_inference(
             preds = outputs.logits_per_image.argmax(dim=1).cpu().tolist()
             predictions.extend(preds)
             references.extend(labels.tolist() if isinstance(labels, torch.Tensor) else labels)
+    # save to csv
+    df = pd.DataFrame({"predictions": predictions, "references": references})
+    df.to_csv("test_predictions.csv", index=False)
     return predictions, references
 
 

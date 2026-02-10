@@ -42,6 +42,8 @@ def load_image_paths_and_labels_and_captions(dataset_path: Path) -> tuple[list[P
     captions = []
 
     data = pd.read_csv(dataset_path / "annotations.csv")
+    # load only 10 images
+    # data = data.head(10)
     LOGGER.info(f"Loading {len(data)} image_paths from {dataset_path}...")
 
     for _, row in data.iterrows():
@@ -119,13 +121,30 @@ class MedSigLIPDataset(Dataset):
     def __getitem__(self, index: int) -> dict:
         image = Image.open(self.image_paths[index]).convert("RGB")
         inputs = self.processor(
-            text=self.captions[index], images=image, padding="max_length", truncation=True, return_tensors="pt"
+            text=self.captions[index],
+            images=image,
+            padding="max_length",
+            truncation=True,
+            return_attention_mask=True,
+            return_tensors="pt",
         )
         return {
             "pixel_values": inputs["pixel_values"].squeeze(0),
             "input_ids": inputs["input_ids"].squeeze(0),
+            "attention_mask": inputs["attention_mask"].squeeze(0),
             "labels": self.labels[index],
         }
+
+
+def collate_fn_text_image(batch: list[dict]) -> dict:
+    """Collate function for MedSigLIP text-image pairs."""
+    return {
+        "pixel_values": torch.stack([item["pixel_values"] for item in batch]),
+        "input_ids": torch.stack([item["input_ids"] for item in batch]),
+        "attention_mask": torch.stack([item["attention_mask"] for item in batch]),
+        # "labels": torch.stack([item["labels"] for item in batch]),
+        "return_loss": True,
+    }
 
 
 def get_data_loader(
