@@ -26,3 +26,10 @@ LABEL_COLUMN_NAME = "class"
 
 CLASSES = ANNOTATIONS_COLUMN_INDEX_MAP[LABEL_COLUMN_NAME]
 CLASSES_DICT = OrderedDict(zip(CLASSES, range(len(CLASSES))))
+
+ZERO_SHOT_CLASS_PROMPTS = [
+    "a retinal fundus photograph with no signs of diabetic retinopathy",
+    "a retinal fundus photograph showing mild to moderate non-proliferative diabetic retinopathy",
+    "a retinal fundus photograph showing clinically significant macular edema",
+    "a retinal fundus photograph showing severe proliferative diabetic retinopathy",
+]

@@ -1,4 +1,4 @@
-"""Test script for evaluating MedSigLIP models."""
+"""Test script for evaluating MedSigLIP models with zero-shot classification."""
 
 import argparse
 import logging
@@ -11,8 +11,8 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 from transformers import AutoModel, AutoProcessor
 
-from dataloader.data_loader import MedSigLIPDataset, get_data_loader
-from dataloader.data_utils import CLASSES
+from dataloader.data_loader import ZeroShotImageDataset, get_data_loader
+from dataloader.data_utils import ZERO_SHOT_CLASS_PROMPTS
 from utils.helper import get_device
 from utils.logger import configure_logging
 
@@ -28,23 +28,42 @@ def make_argparser() -> argparse.ArgumentParser:
     return parser
 
 
+def tokenize_class_prompts(processor: AutoProcessor, device: torch.device) -> dict[str, torch.Tensor]:
+    """Pre-tokenize zero-shot class text prompts."""
+    text_inputs = processor(
+        text=ZERO_SHOT_CLASS_PROMPTS,
+        padding="max_length",
+        truncation=True,
+        return_tensors="pt",
+    )
+    return {k: v.to(device) for k, v in text_inputs.items()}
+
+
 def run_inference(
-    model: AutoModel, data_loader: DataLoader, classes: list[str], device: torch.device
+    model: AutoModel,
+    data_loader: DataLoader,
+    text_inputs: dict[str, torch.Tensor],
+    device: torch.device,
 ) -> tuple[list[int], list[int]]:
     """Run zero-shot classification inference."""
     model.eval()
-    predictions = []
-    references = []
+    predictions: list[int] = []
+    references: list[int] = []
 
     with torch.no_grad():
         for batch in tqdm(data_loader, desc="Running inference..."):
             labels = batch.pop("labels")
-            batch = {k: v.to(device) for k, v in batch.items()}
-            outputs = model(**batch)
+            pixel_values = batch["pixel_values"].to(device)
+
+            outputs = model(
+                pixel_values=pixel_values,
+                input_ids=text_inputs["input_ids"],
+                attention_mask=text_inputs["attention_mask"],
+            )
             preds = outputs.logits_per_image.argmax(dim=1).cpu().tolist()
             predictions.extend(preds)
             references.extend(labels.tolist() if isinstance(labels, torch.Tensor) else labels)
-    # save to csv
+
     df = pd.DataFrame({"predictions": predictions, "references": references})
     df.to_csv("test_predictions.csv", index=False)
     return predictions, references
@@ -70,15 +89,18 @@ def main(args: argparse.Namespace) -> None:
 
     LOGGER.info(f"Loading test data from: {test_path}")
     processor = AutoProcessor.from_pretrained(args.model_path)
-    test_dataset = MedSigLIPDataset(processor=processor, dataset_path=test_path)
+    test_dataset = ZeroShotImageDataset(processor=processor, dataset_path=test_path)
     test_loader = get_data_loader(test_dataset, batch_size=args.batch_size)
     LOGGER.info(f"Test samples: {len(test_dataset)}")
 
     LOGGER.info(f"Loading model: {args.model_path}")
     model = AutoModel.from_pretrained(args.model_path).to(device)
 
+    LOGGER.info(f"Zero-shot class prompts: {ZERO_SHOT_CLASS_PROMPTS}")
+    text_inputs = tokenize_class_prompts(processor, device)
+
     LOGGER.info("Running inference...")
-    predictions, references = run_inference(model, test_loader, CLASSES, device)
+    predictions, references = run_inference(model, test_loader, text_inputs, device)
 
     metrics = compute_metrics(predictions, references)
     LOGGER.info(f"Accuracy: {metrics['accuracy']:.4f}")

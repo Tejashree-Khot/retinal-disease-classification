@@ -136,6 +136,22 @@ class MedSigLIPDataset(Dataset):
         }
 
 
+class ZeroShotImageDataset(Dataset):
+    """Dataset that returns preprocessed images and labels for zero-shot inference."""
+
+    def __init__(self, processor: AutoProcessor, dataset_path: Path):
+        self.image_paths, self.labels, _ = load_image_paths_and_labels_and_captions(dataset_path)
+        self.processor = processor
+
+    def __len__(self) -> int:
+        return len(self.image_paths)
+
+    def __getitem__(self, index: int) -> dict:
+        image = Image.open(self.image_paths[index]).convert("RGB")
+        pixel_values = self.processor(images=image, return_tensors="pt")["pixel_values"].squeeze(0)
+        return {"pixel_values": pixel_values, "labels": self.labels[index]}
+
+
 def collate_fn_text_image(batch: list[dict]) -> dict:
     """Collate function for MedSigLIP text-image pairs."""
     return {
@@ -148,7 +164,9 @@ def collate_fn_text_image(batch: list[dict]) -> dict:
 
 
 def get_data_loader(
-    dataset: CustomDataset | MedSigLIPDataset, batch_size: int, use_weighted_sampler: bool = False
+    dataset: CustomDataset | MedSigLIPDataset | ZeroShotImageDataset,
+    batch_size: int,
+    use_weighted_sampler: bool = False,
 ) -> DataLoader:
     """Get data loader (image + label)."""
     data_loader = DataLoader(
