@@ -38,7 +38,7 @@ def make_argparser() -> argparse.ArgumentParser:
     parser.add_argument("--model_name", type=str, default="resnet", help="Name of the model to train.")
     parser.add_argument("--variant", type=str, default="50", help="Variant of the model to train.")
     parser.add_argument("--batch_size", type=int, default=8, help="Batch size for training.")
-    parser.add_argument("label_column_name", type=str, default="class", help="Label column name.")
+    parser.add_argument("--label_column_name", type=str, default="class", help="Label column name.")
     return parser
 
 
