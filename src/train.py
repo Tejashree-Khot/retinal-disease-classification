@@ -37,6 +37,7 @@ def make_argparser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Train a model on the dataset.")
     parser.add_argument("--model_name", type=str, default="resnet", help="Name of the model to train.")
     parser.add_argument("--variant", type=str, default="50", help="Variant of the model to train.")
+    parser.add_argument("--batch_size", type=int, default=8, help="Batch size for training.")
     return parser
 
 
