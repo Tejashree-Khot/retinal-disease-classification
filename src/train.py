@@ -58,6 +58,7 @@ def main(args: argparse.Namespace) -> None:
     config = TrainerConfig(
         model_name=model_name,
         variant=variant,
+        batch_size=args.batch_size,
         train_path=root_dir / "data" / "IDRiD" / "Train",
         val_path=root_dir / "data" / "IDRiD" / "Test",
         **param_dict,
