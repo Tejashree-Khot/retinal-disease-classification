@@ -34,16 +34,14 @@ def tokenize_class_prompts(processor: AutoProcessor, device: torch.device) -> di
         text=ZERO_SHOT_CLASS_PROMPTS,
         padding="max_length",
         truncation=True,
+        return_attention_mask=True,
         return_tensors="pt",
     )
     return {k: v.to(device) for k, v in text_inputs.items()}
 
 
 def run_inference(
-    model: AutoModel,
-    data_loader: DataLoader,
-    text_inputs: dict[str, torch.Tensor],
-    device: torch.device,
+    model: AutoModel, data_loader: DataLoader, text_inputs: dict[str, torch.Tensor], device: torch.device
 ) -> tuple[list[int], list[int]]:
     """Run zero-shot classification inference."""
     model.eval()
