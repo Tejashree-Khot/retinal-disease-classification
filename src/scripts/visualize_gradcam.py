@@ -4,7 +4,6 @@ import argparse
 import logging
 import os
 import random
-import sys
 from pathlib import Path
 from typing import Literal
 
@@ -16,9 +15,7 @@ from pytorch_grad_cam import GradCAM
 from pytorch_grad_cam.utils.image import show_cam_on_image
 from pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget
 
-sys.path.append(str(Path(__file__).parent.parent / "src"))
-
-from dataloader.data_preprocessing import get_image_transforms, load_image
+from dataloader.data_loader import get_image_transforms, load_image
 from dataloader.data_utils import CLASSES, CLASSES_DICT
 from models.base_model import BaseModel
 from models.checkpoint import CheckpointManager

@@ -4,7 +4,6 @@ import argparse
 import logging
 import random
 import shutil
-import sys
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -13,9 +12,7 @@ import torch
 import torch.nn as nn
 from matplotlib.animation import FuncAnimation
 
-sys.path.append(str(Path(__file__).parent.parent / "src"))
-
-from dataloader.data_preprocessing import get_image_transforms, load_image
+from dataloader.data_loader import get_image_transforms, load_image
 from dataloader.data_utils import CLASSES
 from models.base_model import BaseModel
 from models.checkpoint import CheckpointManager
