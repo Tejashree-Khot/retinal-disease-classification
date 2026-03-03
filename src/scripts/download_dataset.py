@@ -5,7 +5,7 @@ from pathlib import Path
 
 import kagglehub
 
-TARGET_DIR = Path(__file__).parent.parent / "data"
+TARGET_DIR = Path(__file__).parent.parent.parent / "data"
 TARGET_DIR.mkdir(parents=True, exist_ok=True)
 
 # Download to kagglehub cache
