@@ -177,7 +177,7 @@ def make_argparser():
 def main(args: argparse.Namespace):
     """Run Grad-CAM visualization for a single image or classwise predictions."""
     random.seed(42)
-    root = Path(__file__).parent.parent
+    root = Path(__file__).parent.parent.parent
     output_dir = root / "output" / "gradcam"
     output_dir.mkdir(parents=True, exist_ok=True)
 
