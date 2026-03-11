@@ -169,7 +169,13 @@ def make_argparser():
         "--model_name", type=str, default="convnext", choices=["resnet", "vgg", "efficientnet", "convnext"]
     )
     parser.add_argument("--variant", type=str, default="large")
-    parser.add_argument("--image_path", type=Path, nargs="+", default=None, help="Path(s) to image(s) to visualize.")
+    parser.add_argument(
+        "--image_path",
+        type=Path,
+        nargs="+",
+        default=None,
+        help="Path(s) to image(s) for Grad-CAM visualization. Provide one or more paths separated by spaces (not commas). Example: --image_path img1.jpg img2.jpg img3.jpg",
+    )
     parser.add_argument("--prediction_csv", type=Path, default=None, help="Path to the prediction csv file.")
     return parser.parse_args()
 
