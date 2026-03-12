@@ -12,7 +12,7 @@ import pandas as pd
 import torch
 from matplotlib import pyplot as plt
 from PIL import Image
-from pytorch_grad_cam import GradCAM
+from pytorch_grad_cam import GradCAM, GradCAMPlusPlus, ScoreCAM
 from pytorch_grad_cam.utils.image import show_cam_on_image
 from pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget
 
@@ -37,7 +37,10 @@ class GradCAMVisualizer:
     """Grad-CAM visualization utility."""
 
     def __init__(
-        self, model: BaseModel, method: Literal["gradcam", "gradcam++", "scorecam"] = "gradcam", device: str = "cpu"
+        self,
+        model: BaseModel,
+        method: Literal["gradcam", "gradcam++", "score-cam", "scorecam"] = "gradcam",
+        device: str = "cpu",
     ):
         self.device = device
 
@@ -46,7 +49,15 @@ class GradCAMVisualizer:
         self.model = model.model.to(device).eval()
 
         target_layer = self.base_model.get_feature_layer()
-        self.cam = GradCAM(model=self.model, target_layers=[target_layer])
+        method_key = "scorecam" if method in {"score-cam", "scorecam"} else method
+        cam_class = {
+            "gradcam": GradCAM,
+            "gradcam++": GradCAMPlusPlus,
+            "scorecam": ScoreCAM,
+        }.get(method_key)
+        if cam_class is None:
+            raise ValueError(f"Unsupported method: {method}")
+        self.cam = cam_class(model=self.model, target_layers=[target_layer])
 
     def visualize(self, image_tensor: torch.Tensor, class_idx: int | None = None) -> np.ndarray:
         """Generate Grad-CAM visualization for a single image tensor."""
@@ -170,6 +181,13 @@ def make_argparser():
     )
     parser.add_argument("--variant", type=str, default="large")
     parser.add_argument(
+        "--method",
+        type=str,
+        default="gradcam",
+        choices=["gradcam", "gradcam++", "score-cam", "scorecam"],
+        help="CAM method to use for visualization.",
+    )
+    parser.add_argument(
         "--image_path",
         type=Path,
         nargs="+",
@@ -196,7 +214,7 @@ def main(args: argparse.Namespace):
     LOGGER.info(f"Loaded model for visualization from {checkpoint_path}")
 
     transform = get_image_transforms(model.get_input_size(), data_type="test")
-    visualizer = GradCAMVisualizer(model, device="cpu")
+    visualizer = GradCAMVisualizer(model, method=args.method, device="cpu")
 
     if args.image_path:
         if len(args.image_path) == 1:
